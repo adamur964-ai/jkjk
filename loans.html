@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TB | Loan Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 min-h-screen p-6">
+    <div class="max-w-md mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <button onclick="history.back()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><i class="fas fa-arrow-left"></i></button>
+            <h1 class="text-sm font-black uppercase text-[#002147]">Loan Terminal</h1>
+            <div class="w-10"></div>
+        </header>
+
+        <div id="formView" class="bg-white p-6 rounded-3xl shadow-xl border border-slate-100">
+            <div class="space-y-6">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Funding Type</label>
+                    <select id="type" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-4 font-bold text-xs mt-1">
+                        <option value="Personal">Personal Relief</option>
+                        <option value="Business">Business Expansion</option>
+                        <option value="Auto">Automotive Finance</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Requested Capital</label>
+                    <input type="number" id="amt" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-4 font-black text-lg" placeholder="0.00">
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Repayment Term</label>
+                    <select id="term" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-4 font-bold text-xs mt-1">
+                        <option value="12">12 Months (4% APR)</option>
+                        <option value="24">24 Months (5% APR)</option>
+                        <option value="60">60 Months (7% APR)</option>
+                    </select>
+                </div>
+
+                <button id="subBtn" class="w-full h-14 bg-[#002147] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg">Apply for Funding</button>
+            </div>
+        </div>
+
+        <div id="pendView" class="hidden text-center py-20">
+            <div class="w-16 h-16 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <h2 class="text-xl font-black text-[#002147] uppercase">Underwriting</h2>
+            <p class="text-[10px] text-slate-400 font-bold uppercase mt-2">Node is assessing credit risk and collateral</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import { showToast } from './toast.js';
+
+        onAuthStateChanged(auth, user => {
+            if(!user) return;
+            onSnapshot(doc(db, "users", user.uid), snap => {
+                if(snap.data().loanStatus === 'PENDING') {
+                    document.getElementById('formView').classList.add('hidden');
+                    document.getElementById('pendView').classList.remove('hidden');
+                } else {
+                    document.getElementById('formView').classList.remove('hidden');
+                    document.getElementById('pendView').classList.add('hidden');
+                }
+            });
+        });
+
+        document.getElementById('subBtn').onclick = async () => {
+            const amt = document.getElementById('amt').value;
+            if(!amt) return;
+            try {
+                await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    loanStatus: 'PENDING',
+                    loanAmount: Number(amt),
+                    loanType: document.getElementById('type').value
+                });
+                showToast("Application Transmitted");
+            } catch (e) { showToast("System Error", "error"); }
+        };
+    </script>
+</body>
+</html>
