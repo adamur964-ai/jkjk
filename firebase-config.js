@@ -1,36 +1,22 @@
-// firebase-config.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBbZx4FTzQtrfWBdSS-7yJ3RTGriyybmAc",
-  authDomain: "sba-federal-v15.firebaseapp.com",
-  projectId: "sba-federal-v15",
-  storageBucket: "sba-federal-v15.firebasestorage.app",
-  messagingSenderId: "968263854685",
-  appId: "1:968263854685:web:d037910d8c9bd84a91bbb4"
+    apiKey: "AIzaSyA5xd_XuEBP9kWkJepiHMcN5YI12g_OCUw",
+    authDomain: "trustbank-91e66.firebaseapp.com",
+    projectId: "trustbank-91e66",
+    storageBucket: "trustbank-91e66.firebasestorage.app",
+    messagingSenderId: "503416043337",
+    appId: "1:503416043337:web:0e05859102033e6caacc98"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Export for use in other files
+// Export for global use
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-/** * GLOBAL HELPERS 
- * These solve the "Name disappearing on refresh" bug.
- */
-export const saveUserSession = (data) => {
-    sessionStorage.setItem('sba_user_data', JSON.stringify(data));
-};
-
-export const getUserSession = () => {
-    const data = sessionStorage.getItem('sba_user_data');
-    return data ? JSON.parse(data) : null;
-};
-
-export const clearUserSession = () => {
-    sessionStorage.removeItem('sba_user_data');
-};
+// Global Administrator Email
+export const ADMIN_EMAIL = "adamumuhammedrabiu69@gmail.com";
