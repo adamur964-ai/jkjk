@@ -1,3 +1,4 @@
+// Trust Bank (TB) - Firebase Configuration Module
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
@@ -14,9 +15,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Export for global use
+// Export instances
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-
-// Global Administrator Email
 export const ADMIN_EMAIL = "adamumuhammedrabiu69@gmail.com";
