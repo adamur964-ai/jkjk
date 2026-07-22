@@ -1,7 +1,7 @@
-// Trust Bank (TB) - Firebase Configuration Module
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+// Trust Bank (TB) - Firebase Configuration Standard v12.16.0
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyA5xd_XuEBP9kWkJepiHMcN5YI12g_OCUw",
@@ -15,7 +15,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Export instances
+// Export instances for use across the flat folder structure
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const ADMIN_EMAIL = "adamumuhammedrabiu69@gmail.com";
