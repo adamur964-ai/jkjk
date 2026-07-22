@@ -2,180 +2,135 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TB | Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TB | Executive Command</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-50 pb-32">
-    <!-- Header -->
-    <header class="bg-[#002147] pt-12 pb-24 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
-        <div class="absolute top-0 right-0 p-8 opacity-10">
-            <i class="fas fa-university text-9xl"></i>
-        </div>
-        <div class="flex justify-between items-center relative z-10">
+    <header class="gradient-navy pt-12 pb-24 px-6 rounded-b-[40px] shadow-2xl relative overflow-hidden">
+        <div class="flex justify-between items-center relative z-10 animate-in">
             <div class="flex items-center gap-4">
-                <div id="uAvatar" class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white font-black border border-white/20">..</div>
+                <div id="avatar" class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white font-black border border-white/20">..</div>
                 <div>
-                    <h1 id="uName" class="text-white font-black uppercase text-sm tracking-tight">Loading...</h1>
-                    <p id="uAcc" class="text-slate-400 text-[10px] font-bold">ACC: ****</p>
+                    <h1 id="userName" class="text-white font-black uppercase text-sm tracking-tight">Loading...</h1>
+                    <p id="accNum" class="text-slate-400 text-[9px] font-black uppercase tracking-widest mt-1">ACC: ****</p>
                 </div>
             </div>
-            <a href="notifications.html" class="relative text-white/80">
-                <i class="fas fa-bell text-xl"></i>
-                <span id="nDot" class="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full hidden"></span>
+            <a href="notifications.html" class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white/50 border border-white/10">
+                <i class="fas fa-bell"></i>
             </a>
         </div>
     </header>
 
-    <!-- Balance Card -->
-    <main class="px-6 -mt-16 relative z-20">
-        <div class="bg-white p-6 rounded-3xl shadow-xl border border-slate-100">
+    <main class="px-6 -mt-16 relative z-20 space-y-6">
+        <!-- Balance Module -->
+        <div class="glass-card p-8 tb-shadow animate-in">
             <div class="flex justify-between items-center mb-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available Balance</span>
-                <span id="uCurrency" class="text-[9px] font-black bg-slate-100 px-2 py-1 rounded text-slate-600">USD</span>
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Liquid Liquidity</span>
+                <span id="currencyTag" class="text-[9px] font-black bg-slate-100 px-3 py-1 rounded-full text-slate-600">USD</span>
             </div>
             <div class="flex items-center gap-4">
-                <h2 id="mainBal" class="text-4xl font-black text-[#002147] tracking-tighter">$0.00</h2>
-                <button id="toggleBal" class="text-slate-300"><i class="fas fa-eye-slash"></i></button>
+                <h2 id="balAvailable" class="text-4xl font-black text-[#002147] tracking-tighter">$0.00</h2>
+                <i class="fas fa-eye-slash text-slate-200 cursor-pointer"></i>
             </div>
             
-            <!-- Stats -->
-            <div class="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-slate-50">
+            <div class="grid grid-cols-2 gap-4 mt-8 pt-8 border-t border-slate-50">
                 <div>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase">Savings</p>
-                    <p id="savBal" class="text-sm font-black text-emerald-600">$0.00</p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase mb-1">Vault Reserve</p>
+                    <p id="balSavings" class="text-sm font-black text-emerald-600">$0.00</p>
                 </div>
                 <div class="text-right">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase">Total Reserve</p>
-                    <p id="totBal" class="text-sm font-black text-[#002147]">$0.00</p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase mb-1">Total Assets</p>
+                    <p id="balTotal" class="text-sm font-black text-[#002147]">$0.00</p>
                 </div>
             </div>
 
-            <!-- Quick Actions -->
+            <!-- Action Grid -->
             <div class="grid grid-cols-4 gap-2 mt-8">
                 <a href="deposit.html" class="flex flex-col items-center gap-2">
-                    <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] border border-slate-100"><i class="fas fa-plus"></i></div>
-                    <span class="text-[9px] font-bold uppercase">Add</span>
+                    <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] border border-slate-100 hover:bg-[#D4AF37] hover:text-white transition-all"><i class="fas fa-plus"></i></div>
+                    <span class="text-[8px] font-black uppercase">Deposit</span>
                 </a>
                 <a href="transfer.html" class="flex flex-col items-center gap-2">
-                    <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] border border-slate-100"><i class="fas fa-exchange-alt"></i></div>
-                    <span class="text-[9px] font-bold uppercase">Move</span>
+                    <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] border border-slate-100 hover:bg-[#D4AF37] hover:text-white transition-all"><i class="fas fa-exchange-alt"></i></div>
+                    <span class="text-[8px] font-black uppercase">Transfer</span>
                 </a>
                 <a href="withdraw.html" class="flex flex-col items-center gap-2">
-                    <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] border border-slate-100"><i class="fas fa-paper-plane"></i></div>
-                    <span class="text-[9px] font-bold uppercase">Send</span>
+                    <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] border border-slate-100 hover:bg-[#D4AF37] hover:text-white transition-all"><i class="fas fa-paper-plane"></i></div>
+                    <span class="text-[8px] font-black uppercase">Payout</span>
                 </a>
-                <a href="cards.html" class="flex flex-col items-center gap-2">
-                    <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] border border-slate-100"><i class="far fa-credit-card"></i></div>
-                    <span class="text-[9px] font-bold uppercase">Cards</span>
+                <a href="loans.html" class="flex flex-col items-center gap-2">
+                    <div class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] border border-slate-100 hover:bg-[#D4AF37] hover:text-white transition-all"><i class="fas fa-hand-holding-dollar"></i></div>
+                    <span class="text-[8px] font-black uppercase">Loans</span>
                 </a>
             </div>
         </div>
 
-        <!-- Recent Transactions -->
-        <div class="mt-8">
+        <div class="animate-in" style="animation-delay: 0.1s;">
             <div class="flex justify-between items-center px-2 mb-4">
                 <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Recent Activity</h3>
-                <a href="transactions.html" class="text-[10px] font-bold text-[#002147] underline">View All</a>
+                <a href="transactions.html" class="text-[10px] font-black text-[#D4AF37] uppercase underline">View Full Ledger</a>
             </div>
-            <div id="recents" class="space-y-3">
-                <!-- Transactions Injected Here -->
+            <div id="recent-list" class="space-y-3">
+                <!-- Transactions Injected -->
             </div>
         </div>
-
-        <!-- Support Shortcut -->
-        <a href="support.html" class="mt-8 bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
-            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=120" class="w-10 h-10 rounded-xl grayscale border border-slate-100">
-            <div class="flex-1">
-                <p class="text-[11px] font-black uppercase text-slate-800">Sarah Miller</p>
-                <p class="text-[9px] font-bold text-emerald-600 uppercase">Assigned Account Manager</p>
-            </div>
-            <i class="fas fa-comment-dots text-slate-300"></i>
-        </a>
     </main>
 
-    <!-- Navbar Container -->
-    <div id="main-nav"></div>
+    <div id="bottom-nav"></div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-        import { doc, onSnapshot, collection, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-        import { injectNavbar } from './components.js';
-        import { formatCurrency, maskAccountNumber } from './utils.js';
-
-        let isHidden = false;
-        let userData = null;
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { doc, onSnapshot, collection, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { renderNav } from './components.js';
+        import { formatMoney } from './utils.js';
 
         onAuthStateChanged(auth, user => {
             if(!user) { window.location.href="login.html"; return; }
-            injectNavbar('home');
+            renderNav('home');
 
-            // Global Sync
+            // 1. Sync User Profile
             onSnapshot(doc(db, "users", user.uid), snap => {
-                userData = snap.data();
-                if(!userData) return;
-
-                document.getElementById('uName').innerText = userData.fullName;
-                document.getElementById('uAvatar').innerText = userData.fullName.charAt(0);
-                document.getElementById('uAcc').innerText = "ACC: " + maskAccountNumber(userData.accNumber);
-                document.getElementById('uCurrency').innerText = userData.currency;
-                
-                updateUI();
+                const u = snap.data();
+                document.getElementById('userName').innerText = u.name;
+                document.getElementById('avatar').innerText = u.name.charAt(0);
             });
 
-            // Recent Transactions
-            const q = query(collection(db, "transactions"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(2));
+            // 2. Sync Account Balances
+            onSnapshot(doc(db, "accounts", user.uid), snap => {
+                const a = snap.data();
+                document.getElementById('accNum').innerText = "ACC: ****" + a.accNumber.slice(-4);
+                document.getElementById('currencyTag').innerText = a.currency;
+                document.getElementById('balAvailable').innerText = formatMoney(a.balAvailable, a.currency);
+                document.getElementById('balSavings').innerText = formatMoney(a.balSavings, a.currency);
+                document.getElementById('balTotal').innerText = formatMoney(a.balTotal, a.currency);
+            });
+
+            // 3. Load Recent Ledger
+            const q = query(collection(db, "transactions"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(3));
             onSnapshot(q, snap => {
-                const list = document.getElementById('recents');
-                if(snap.empty) {
-                    list.innerHTML = `<p class="text-center text-[10px] text-slate-400 font-bold uppercase py-4">No recent ledger entries</p>`;
-                    return;
-                }
-                list.innerHTML = "";
+                const list = document.getElementById('recent-list');
+                list.innerHTML = snap.empty ? `<p class="text-center py-6 text-[10px] font-black text-slate-300 uppercase">No Activity Logged</p>` : "";
                 snap.forEach(d => {
                     const tx = d.data();
-                    const isCredit = tx.type === 'DEPOSIT' || tx.type === 'REFUND';
+                    const isCredit = ['DEPOSIT', 'LOAN'].includes(tx.type);
                     list.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-[10px] ${isCredit ? 'text-emerald-500' : 'text-rose-500'}">
-                                <i class="fas ${isCredit ? 'fa-arrow-down' : 'fa-arrow-up'}"></i>
-                            </div>
+                        <div class="glass-card p-5 flex justify-between items-center border-l-4 ${isCredit ? 'border-emerald-500' : 'border-[#002147]'}">
                             <div>
                                 <p class="text-[11px] font-black uppercase text-slate-800">${tx.description}</p>
-                                <p class="text-[9px] font-bold text-slate-400">${new Date(tx.timestamp).toLocaleDateString()}</p>
+                                <p class="text-[8px] font-black text-slate-400 mt-1 uppercase">${new Date(tx.timestamp).toLocaleDateString()}</p>
                             </div>
+                            <p class="text-xs font-black ${isCredit ? 'text-emerald-600' : 'text-slate-800'}">
+                                ${isCredit ? '+' : '-'}${formatMoney(tx.amount, tx.currency || 'USD')}
+                            </p>
                         </div>
-                        <p class="text-xs font-black ${isCredit ? 'text-emerald-600' : 'text-slate-800'}">
-                            ${isCredit ? '+' : '-'}${formatCurrency(tx.amount, userData.currency)}
-                        </p>
-                    </div>`;
+                    `;
                 });
             });
         });
-
-        function updateUI() {
-            const main = document.getElementById('mainBal');
-            const sav = document.getElementById('savBal');
-            const tot = document.getElementById('totBal');
-
-            if(isHidden) {
-                main.innerText = "****"; sav.innerText = "****"; tot.innerText = "****";
-            } else {
-                main.innerText = formatCurrency(userData.balAvailable, userData.currency);
-                sav.innerText = formatCurrency(userData.balSavings, userData.currency);
-                tot.innerText = formatCurrency(userData.balTotal, userData.currency);
-            }
-        }
-
-        document.getElementById('toggleBal').onclick = () => {
-            isHidden = !isHidden;
-            document.getElementById('toggleBal').innerHTML = isHidden ? `<i class="fas fa-eye"></i>` : `<i class="fas fa-eye-slash"></i>`;
-            updateUI();
-        };
     </script>
 </body>
 </html>
