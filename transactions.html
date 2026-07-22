@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TB | Ledger History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 p-6 pb-32">
+    <div class="max-w-md mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <button onclick="history.back()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><i class="fas fa-arrow-left"></i></button>
+            <h1 class="text-sm font-black uppercase text-[#002147]">Transaction History</h1>
+            <div class="w-10"></div>
+        </header>
+
+        <div class="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm mb-6 flex items-center gap-4">
+            <i class="fas fa-search text-slate-300"></i>
+            <input type="text" id="search" class="flex-1 bg-transparent border-none text-xs font-bold outline-none" placeholder="Search ledger by description...">
+        </div>
+
+        <div id="ledger" class="space-y-3">
+            <!-- Dynamic Injection -->
+        </div>
+    </div>
+
+    <div id="main-nav"></div>
+
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import { collection, query, where, orderBy, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { injectNavbar } from './components.js';
+        import { formatCurrency } from './utils.js';
+
+        let currency = 'USD';
+
+        onAuthStateChanged(auth, async user => {
+            if(!user) return;
+            injectNavbar('history');
+
+            const uSnap = await getDoc(doc(db, "users", user.uid));
+            currency = uSnap.data().currency;
+
+            const q = query(collection(db, "transactions"), where("uid", "==", user.uid), orderBy("timestamp", "desc"));
+            onSnapshot(q, snap => {
+                const list = document.getElementById('ledger');
+                if(snap.empty) {
+                    list.innerHTML = `<p class="text-center text-[10px] text-slate-400 font-bold py-10 uppercase tracking-widest">No transaction history found</p>`;
+                    return;
+                }
+                list.innerHTML = "";
+                snap.forEach(d => {
+                    const tx = d.data();
+                    const isCredit = tx.type === 'DEPOSIT' || tx.type === 'REFUND';
+                    list.innerHTML += `
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <p class="text-[11px] font-black uppercase text-slate-800">${tx.description}</p>
+                                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">${new Date(tx.timestamp).toLocaleString()}</p>
+                            </div>
+                            <span class="text-[8px] font-black px-2 py-1 rounded uppercase ${tx.status === 'CLEARED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">
+                                ${tx.status}
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-end mt-4">
+                            <p class="text-[8px] font-bold text-slate-300">REF: ${d.id.slice(0,8).toUpperCase()}</p>
+                            <p class="text-sm font-black ${isCredit ? 'text-emerald-600' : 'text-slate-800'}">
+                                ${isCredit ? '+' : '-'}${formatCurrency(tx.amount, currency)}
+                            </p>
+                        </div>
+                    </div>`;
+                });
+            });
+        });
+    </script>
+</body>
+</html>
