@@ -2,74 +2,56 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trust Bank (TB) | Professional Digital Banking</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trust Bank (TB) | Global Asset Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50">
-    <nav class="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-        <div class="flex items-center gap-3">
-            <div class="border-2 border-[#002147] px-2 py-1"><span class="text-xl font-black text-[#002147]">TB</span></div>
-            <span class="font-bold text-[#002147] hidden sm:block">Trust Bank</span>
+<body>
+    <nav class="p-6 flex justify-between items-center bg-white border-b border-slate-100 sticky top-0 z-[1000]">
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-10 gradient-navy flex items-center justify-center text-white rounded-xl font-black">TB</div>
+            <span class="font-black text-slate-800 tracking-tighter text-xl">Trust Bank</span>
         </div>
         <div class="flex gap-4">
-            <a href="login.html" class="text-sm font-bold text-[#002147] pt-2">Login</a>
-            <a href="register.html" class="bg-[#002147] text-white px-6 py-2 rounded-lg font-bold text-sm">Open Account</a>
+            <a href="login.html" class="px-6 py-2 font-bold text-[#002147]">Log In</a>
+            <a href="register.html" class="px-6 py-2 gradient-navy text-white rounded-xl font-bold shadow-lg">Open Account</a>
         </div>
     </nav>
 
-    <header class="bg-[#002147] text-white py-20 px-8 text-center lg:text-left">
-        <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-                <span class="text-[#D4AF37] font-bold tracking-widest text-xs uppercase">Premium Global Banking</span>
-                <h1 class="text-5xl md:text-7xl font-black mt-4 leading-tight">Banking that <span class="text-[#D4AF37]">Trusts</span> you.</h1>
-                <p class="text-slate-300 mt-6 text-lg max-w-lg">Experience the next generation of digital finance. Secure, multi-currency accounts designed for modern life.</p>
-                <div class="mt-10 flex flex-col sm:flex-row gap-4">
-                    <a href="register.html" class="bg-[#D4AF37] text-[#002147] px-10 py-4 rounded-xl font-black uppercase text-xs tracking-widest text-center">Get Started</a>
-                    <a href="#features" class="border border-white/20 px-10 py-4 rounded-xl font-black uppercase text-xs tracking-widest text-center">Learn More</a>
-                </div>
-            </div>
-            <div class="hidden lg:block relative">
-                <div class="bg-white/5 backdrop-blur-xl p-8 rounded-3xl border border-white/10 shadow-2xl">
-                    <div class="flex justify-between items-center mb-8">
-                        <span class="text-xs font-bold text-[#D4AF37] uppercase">Global Reserves</span>
-                        <span class="text-emerald-400 text-xs font-bold"><i class="fas fa-circle animate-pulse mr-2"></i>Live System</span>
-                    </div>
-                    <h2 class="text-4xl font-black">$4.2B+</h2>
-                    <p class="text-slate-400 text-xs mt-2 uppercase">Total Assets Managed</p>
-                    <div class="grid grid-cols-2 gap-4 mt-8 border-t border-white/10 pt-8">
-                        <div><p class="text-[10px] text-slate-500 uppercase">Users</p><p class="text-xl font-bold">1.2M+</p></div>
-                        <div><p class="text-[10px] text-slate-500 uppercase">Uptime</p><p class="text-xl font-bold">99.9%</p></div>
-                    </div>
-                </div>
+    <header class="py-24 px-6 gradient-navy text-white text-center">
+        <div class="max-w-4xl mx-auto animate-in">
+            <span class="badge badge-gold mb-6 inline-block">ISO 27001 CERTIFIED</span>
+            <h1 class="text-5xl md:text-7xl font-black leading-tight mb-8">Premium Banking <br><span class="text-[#D4AF37]">Without Boundaries.</span></h1>
+            <p class="text-lg text-slate-400 mb-12 max-w-2xl mx-auto font-medium">Access multi-currency accounts, instant personal loans, and a high-security digital vault from any node in the world.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="register.html" class="btn-primary btn-gold px-12 py-5 shadow-2xl">Start Enrollment</a>
+                <a href="login.html" class="px-12 py-5 border border-white/20 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-white/5 transition-all">Portal Access</a>
             </div>
         </div>
     </header>
 
-    <section id="features" class="py-20 px-8 max-w-6xl mx-auto">
-        <div class="grid md:grid-cols-3 gap-8">
-            <div class="bg-white p-10 rounded-2xl border border-slate-100 shadow-sm">
-                <i class="fas fa-shield-alt text-3xl text-[#D4AF37] mb-6"></i>
-                <h3 class="font-black text-lg uppercase text-[#002147]">Secure Vault</h3>
-                <p class="text-slate-500 text-sm mt-3">Advanced 256-bit encryption for all your digital assets and documents.</p>
-            </div>
-            <div class="bg-white p-10 rounded-2xl border border-slate-100 shadow-sm">
-                <i class="fas fa-globe text-3xl text-[#D4AF37] mb-6"></i>
-                <h3 class="font-black text-lg uppercase text-[#002147]">Multi-Currency</h3>
-                <p class="text-slate-500 text-sm mt-3">Seamlessly hold and transfer USD, EUR, and GBP with live exchange rates.</p>
-            </div>
-            <div class="bg-white p-10 rounded-2xl border border-slate-100 shadow-sm">
-                <i class="fas fa-bolt text-3xl text-[#D4AF37] mb-6"></i>
-                <h3 class="font-black text-lg uppercase text-[#002147]">Instant Credit</h3>
-                <p class="text-slate-500 text-sm mt-3">Apply for virtual cards and personal loans with immediate node approval.</p>
-            </div>
+    <section class="py-20 px-6 max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
+        <div class="glass-card p-10 border-t-8 border-[#002147]">
+            <i class="fas fa-globe-americas text-4xl text-[#D4AF37] mb-6"></i>
+            <h3 class="text-xl font-black uppercase text-slate-800 mb-4">Multi-Currency</h3>
+            <p class="text-slate-500 font-medium">Seamlessly hold USD, EUR, and GBP with institutional exchange rates.</p>
+        </div>
+        <div class="glass-card p-10 border-t-8 border-[#002147]">
+            <i class="fas fa-shield-halved text-4xl text-[#D4AF37] mb-6"></i>
+            <h3 class="text-xl font-black uppercase text-slate-800 mb-4">Digital Vault</h3>
+            <p class="text-slate-500 font-medium">End-to-end encrypted document storage for your most sensitive credentials.</p>
+        </div>
+        <div class="glass-card p-10 border-t-8 border-[#002147]">
+            <i class="fas fa-bolt text-4xl text-[#D4AF37] mb-6"></i>
+            <h3 class="text-xl font-black uppercase text-slate-800 mb-4">Instant Credit</h3>
+            <p class="text-slate-500 font-medium">Apply for virtual cards and personal loans with immediate node auditing.</p>
         </div>
     </section>
 
-    <footer class="bg-white border-t border-slate-200 py-10 px-8 text-center">
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Trust Bank (TB) | A Global Reserve Partner</p>
+    <footer class="bg-white border-t border-slate-100 py-12 px-6 text-center">
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[4px]">© 2026 Trust Bank International (TBX) • Member FDIC Simulation</p>
     </footer>
 </body>
 </html>
