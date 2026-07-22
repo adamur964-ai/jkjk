@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TB | Global Transfers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 min-h-screen p-6 pb-32">
+    <div class="max-w-md mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <button onclick="history.back()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><i class="fas fa-arrow-left"></i></button>
+            <h1 class="text-sm font-black uppercase text-[#002147]">Transfer Node</h1>
+            <div class="w-10"></div>
+        </header>
+
+        <div class="bg-white p-6 rounded-3xl shadow-xl border border-slate-100">
+            <div class="flex gap-2 p-1 bg-slate-50 rounded-xl mb-6">
+                <button onclick="setType('internal')" id="btnInt" class="flex-1 py-3 text-[10px] font-black uppercase rounded-lg bg-[#002147] text-white">TB Internal</button>
+                <button onclick="setType('external')" id="btnExt" class="flex-1 py-3 text-[10px] font-black uppercase rounded-lg text-slate-400">External</button>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Destination Account / IBAN</label>
+                    <input type="text" id="target" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-4 font-bold text-sm outline-none focus:border-[#002147]" placeholder="10-digit TB Acc or IBAN...">
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Transfer Amount</label>
+                    <div class="relative">
+                        <span class="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-300">$</span>
+                        <input type="number" id="amt" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 font-black text-lg outline-none focus:border-[#002147]" placeholder="0.00">
+                    </div>
+                </div>
+
+                <div id="fxBox" class="hidden bg-slate-900 p-4 rounded-2xl">
+                    <p class="text-[9px] font-bold text-slate-500 uppercase">Estimated Conversion</p>
+                    <div class="flex justify-between items-center mt-1">
+                        <span id="fxVal" class="text-sm font-black text-white">€0.00</span>
+                        <span class="text-[8px] font-bold text-[#D4AF37] uppercase">Rate: 1 USD = 0.92 EUR</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Authorization PIN</label>
+                    <input type="password" id="pin" maxlength="4" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-4 text-center text-2xl tracking-[20px] outline-none focus:border-[#002147]" placeholder="••••">
+                </div>
+
+                <button id="subBtn" class="w-full h-14 bg-[#002147] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg">Execute Transfer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-nav"></div>
+
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import { showToast } from './toast.js';
+        import { injectNavbar } from './components.js';
+
+        let type = 'internal';
+        let userData = null;
+
+        onAuthStateChanged(auth, async user => {
+            if(!user) return;
+            injectNavbar('transfer');
+            const snap = await getDoc(doc(db, "users", user.uid));
+            userData = snap.data();
+        });
+
+        window.setType = (t) => {
+            type = t;
+            document.getElementById('btnInt').className = t === 'internal' ? 'flex-1 py-3 text-[10px] font-black uppercase rounded-lg bg-[#002147] text-white' : 'flex-1 py-3 text-[10px] font-black uppercase rounded-lg text-slate-400';
+            document.getElementById('btnExt').className = t === 'external' ? 'flex-1 py-3 text-[10px] font-black uppercase rounded-lg bg-[#002147] text-white' : 'flex-1 py-3 text-[10px] font-black uppercase rounded-lg text-slate-400';
+            document.getElementById('fxBox').classList.toggle('hidden', t === 'internal');
+        };
+
+        document.getElementById('amt').oninput = (e) => {
+            const v = e.target.value;
+            document.getElementById('fxVal').innerText = `€${(v * 0.92).toFixed(2)}`;
+        };
+
+        document.getElementById('subBtn').onclick = async () => {
+            const amt = Number(document.getElementById('amt').value);
+            const pin = document.getElementById('pin').value;
+            const target = document.getElementById('target').value;
+
+            if(!amt || !pin || !target) { showToast("All data required", "error"); return; }
+            if(amt > userData.balAvailable) { showToast("Insufficient balance", "error"); return; }
+            if(pin !== userData.transactionPin) { showToast("Incorrect PIN", "error"); return; }
+
+            document.getElementById('subBtn').disabled = true;
+            try {
+                // Record
+                await addDoc(collection(db, "transactions"), {
+                    uid: auth.currentUser.uid,
+                    type: 'TRANSFER',
+                    amount: amt,
+                    description: `${type.toUpperCase()} TRANSFER TO ${target}`,
+                    timestamp: new Date().toISOString(),
+                    status: 'PENDING'
+                });
+
+                await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    balAvailable: userData.balAvailable - amt
+                });
+
+                showToast("Transfer Protocol Initialized");
+                setTimeout(() => window.location.href="dashboard.html", 1500);
+            } catch (e) { showToast("Transfer Failed", "error"); }
+        };
+    </script>
+</body>
+</html>
