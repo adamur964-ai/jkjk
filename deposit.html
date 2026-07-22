@@ -2,105 +2,120 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TB | Deposit Funds</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TB | Asset Settlement</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen p-6">
-    <div class="max-w-md mx-auto">
-        <header class="flex justify-between items-center mb-8">
-            <button onclick="history.back()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><i class="fas fa-arrow-left"></i></button>
-            <h1 class="text-sm font-black uppercase text-[#002147]">Deposit Terminal</h1>
-            <div class="w-10"></div>
-        </header>
+<body class="bg-slate-50 min-h-screen">
+    <div id="app-header"></div>
 
-        <div id="formView" class="bg-white p-6 rounded-3xl shadow-xl border border-slate-100">
-            <div class="mb-6">
-                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Asset Channel</label>
-                <select id="method" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-4 font-bold text-xs mt-2">
-                    <option value="Wire Transfer">Federal Wire / SWIFT</option>
-                    <option value="Mobile Check">Digital Check Deposit</option>
-                    <option value="Crypto">Blockchain Settlement (USDT/BTC)</option>
-                </select>
-            </div>
-
-            <div class="mb-6">
-                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Deposit Amount</label>
-                <div class="relative mt-2">
-                    <span class="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-300">$</span>
-                    <input type="number" id="amt" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 font-black text-lg outline-none focus:border-[#002147]" placeholder="0.00">
+    <main class="p-6 max-w-md mx-auto">
+        <!-- Stage 1: Input -->
+        <div id="stage-input" class="animate-in">
+            <div class="glass-card p-6 space-y-6 input-group">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Settlement Method</label>
+                    <select id="method">
+                        <option value="Wire Transfer">Institutional Wire / SWIFT</option>
+                        <option value="Mobile Check">Digital Check Deposit</option>
+                        <option value="Crypto">Blockchain Settlement (USDT/BTC)</option>
+                    </select>
                 </div>
-            </div>
-
-            <div class="mb-8">
-                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Upload Receipt / Proof</label>
-                <div onclick="document.getElementById('file').click()" class="mt-2 border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center bg-slate-50 cursor-pointer relative overflow-hidden">
-                    <img id="prev" class="absolute inset-0 w-full h-full object-cover hidden z-10">
-                    <i class="fas fa-cloud-upload-alt text-2xl text-slate-300 mb-2"></i>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase">Click to browse files</p>
-                    <input type="file" id="file" class="hidden" accept="image/*">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Amount to Settle</label>
+                    <input type="number" id="amt" placeholder="0.00">
                 </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Transmission Receipt</label>
+                    <div id="dropzone" onclick="document.getElementById('file').click()" class="h-40 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden cursor-pointer">
+                        <img id="prev" class="absolute inset-0 w-full h-full object-cover hidden z-10">
+                        <div id="placeholder">
+                            <i class="fas fa-cloud-upload-alt text-2xl text-slate-200 mb-2"></i>
+                            <p class="text-[10px] font-black text-slate-300 uppercase">Upload proof of transfer</p>
+                        </div>
+                    </div>
+                    <input type="file" id="file" hidden accept="image/*">
+                </div>
+                <button id="subBtn" class="btn-primary w-full gradient-navy shadow-xl">Transmit Settlement</button>
             </div>
-
-            <button id="subBtn" class="w-full h-14 bg-[#002147] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg">Transmit Deposit</button>
         </div>
 
-        <!-- States -->
-        <div id="pendView" class="hidden text-center py-20">
+        <!-- Stage 2: Pending -->
+        <div id="stage-pending" class="hidden text-center py-20 animate-in">
             <div class="w-16 h-16 border-4 border-[#002147] border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-            <h2 class="text-xl font-black text-[#002147] uppercase">Audit Active</h2>
-            <p class="text-[10px] text-slate-400 font-bold uppercase mt-2">Treasury is validating your settlement proof</p>
+            <h2 class="text-2xl font-black text-[#002147] uppercase">Node Auditing</h2>
+            <p class="text-xs text-slate-400 font-bold uppercase mt-4 px-10">The TBX Treasury node is currently verifying your transmission proof.</p>
         </div>
-    </div>
+
+        <!-- Stage 3: Success -->
+        <div id="stage-success" class="hidden text-center py-20 animate-in">
+            <i class="fas fa-check-circle text-6xl text-emerald-500 mb-6"></i>
+            <h2 class="text-2xl font-black text-emerald-600 uppercase">Settlement Cleared</h2>
+            <p class="text-xs text-slate-500 font-medium mt-4 px-10">Funds have been provisioned to your available balance.</p>
+            <a href="dashboard.html" class="btn-primary inline-block mt-8 px-12">Return Home</a>
+        </div>
+
+        <!-- Stage 4: Declined -->
+        <div id="stage-declined" class="hidden text-center py-20 animate-in">
+            <i class="fas fa-exclamation-triangle text-6xl text-rose-500 mb-6"></i>
+            <h2 class="text-2xl font-black text-rose-600 uppercase">Audit Failed</h2>
+            <p id="failReason" class="text-xs text-slate-500 font-medium mt-4 px-10">...</p>
+            <button onclick="location.reload()" class="btn-primary inline-block mt-8 px-12">Retry Settlement</button>
+        </div>
+    </main>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { doc, updateDoc, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-        import { showToast } from './toast.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { renderHeader } from './components.js';
+        import { compressImage } from './utils.js';
+        import { notify } from './toast.js';
 
-        let base64 = null;
-
-        document.getElementById('file').onchange = (e) => {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                base64 = ev.target.result;
-                document.getElementById('prev').src = base64;
-                document.getElementById('prev').classList.remove('hidden');
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        };
+        let compressedData = null;
 
         onAuthStateChanged(auth, user => {
             if(!user) return;
+            renderHeader("Deposit Node");
+
             onSnapshot(doc(db, "users", user.uid), snap => {
-                const status = snap.data().depositStatus;
-                if(status === 'PENDING') {
-                    document.getElementById('formView').classList.add('hidden');
-                    document.getElementById('pendView').classList.remove('hidden');
-                } else {
-                    document.getElementById('formView').classList.remove('hidden');
-                    document.getElementById('pendView').classList.add('hidden');
+                const status = snap.data().depositStatus || "IDLE";
+                document.querySelectorAll('main > div').forEach(d => d.classList.add('hidden'));
+
+                if(status === "PENDING") document.getElementById('stage-pending').classList.remove('hidden');
+                else if(status === "SUCCESSFUL") document.getElementById('stage-success').classList.remove('hidden');
+                else if(status === "DECLINED") {
+                    document.getElementById('stage-declined').classList.remove('hidden');
+                    document.getElementById('failReason').innerText = snap.data().depositReason || "Verification unsuccessful.";
                 }
+                else document.getElementById('stage-input').classList.remove('hidden');
             });
         });
 
+        document.getElementById('file').onchange = async (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            compressedData = await compressImage(file);
+            document.getElementById('prev').src = compressedData;
+            document.getElementById('prev').classList.remove('hidden');
+            document.getElementById('placeholder').classList.add('hidden');
+        };
+
         document.getElementById('subBtn').onclick = async () => {
             const amt = document.getElementById('amt').value;
-            if(!amt || !base64) { showToast("Amount and proof required", "error"); return; }
+            if(!amt || !compressedData) return notify("Amount and proof required", "error");
             
-            document.getElementById('subBtn').disabled = true;
             try {
                 await updateDoc(doc(db, "users", auth.currentUser.uid), {
                     depositStatus: 'PENDING',
                     depositAmount: Number(amt),
-                    depositProof: base64,
+                    depositProof: compressedData,
                     depositMethod: document.getElementById('method').value
                 });
-                showToast("Transmission Successful");
-            } catch (e) { showToast("System Error", "error"); }
+                notify("Transmission Initialized");
+            } catch (e) { notify("Submission error", "error"); }
         };
     </script>
 </body>
