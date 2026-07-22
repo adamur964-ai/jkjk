@@ -1,16 +1,16 @@
-/* Trust Bank (TB) Session Persistence */
+/* Trust Bank (TB) Local Session Persistence */
 
-const SESSION_KEY = 'tb_user_session';
+const KEY = 'tb_user_session';
 
-export const saveUserSession = (userData) => {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(userData));
+export const saveSession = (data) => {
+    sessionStorage.setItem(KEY, JSON.stringify(data));
 };
 
-export const getUserSession = () => {
-    const session = sessionStorage.getItem(SESSION_KEY);
-    return session ? JSON.parse(session) : null;
+export const getSession = () => {
+    const data = sessionStorage.getItem(KEY);
+    return data ? JSON.parse(data) : null;
 };
 
-export const clearUserSession = () => {
-    sessionStorage.removeItem(SESSION_KEY);
+export const clearSession = () => {
+    sessionStorage.removeItem(KEY);
 };
