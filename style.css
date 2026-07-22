@@ -1,61 +1,113 @@
-/* Trust Bank (TB) Professional Design System */
+/* Trust Bank (TB) Master Design System */
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;600;700;900&display=swap');
+
 :root {
     --tb-navy: #002147;
     --tb-gold: #D4AF37;
     --tb-gold-light: #F4DF4E;
     --tb-slate: #1e293b;
-    --tb-light: #f8fafc;
+    --tb-light: #f1f5f9;
     --tb-emerald: #10b981;
     --tb-rose: #f43f5e;
     --tb-white: #ffffff;
+    --glass: rgba(255, 255, 255, 0.8);
+}
+
+* { 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
 }
 
 body {
     background-color: var(--tb-light);
     color: var(--tb-slate);
-    font-family: 'Inter', -apple-system, sans-serif;
+    font-family: 'Public Sans', sans-serif;
     margin: 0;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
 }
 
-/* Banking Cards */
-.tb-card {
-    background: var(--tb-white);
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
+/* Restored High-End Polish */
+.glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 10px 30px rgba(0, 33, 71, 0.05);
+    border-radius: 24px;
 }
 
-/* Branding Colors */
-.bg-navy { background-color: var(--tb-navy); }
-.text-gold { color: var(--tb-gold); }
-.border-gold { border-color: var(--tb-gold); }
+.tb-shadow {
+    box-shadow: 0 20px 40px -15px rgba(0, 33, 71, 0.15);
+}
 
-/* Buttons */
+.gradient-navy {
+    background: linear-gradient(135deg, var(--tb-navy) 0%, #001529 100%);
+}
+
+.gradient-gold {
+    background: linear-gradient(135deg, var(--tb-gold) 0%, #b8860b 100%);
+}
+
+/* Animations */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+    animation: slideUp 0.5s ease forwards;
+}
+
+/* Custom Input Styles */
+.input-group input, .input-group select, .input-group textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    transition: 0.2s ease;
+    outline: none;
+}
+
+.input-group input:focus {
+    border-color: var(--tb-navy);
+    box-shadow: 0 0 0 4px rgba(0, 33, 71, 0.05);
+}
+
+/* Button UI */
 .btn-primary {
     background-color: var(--tb-navy);
     color: white;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-radius: 8px;
-    transition: all 0.2s;
+    letter-spacing: 1px;
+    border-radius: 14px;
+    padding: 16px;
+    transition: 0.3s;
+    border: none;
+    cursor: pointer;
 }
 
-.btn-primary:hover {
-    background-color: #001a35;
-    transform: translateY(-1px);
+.btn-primary:active {
+    transform: scale(0.96);
 }
 
-/* Glassmorphism for Dashboard */
-.glass-panel {
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+.btn-gold {
+    background-color: var(--tb-gold);
+    color: var(--tb-navy);
 }
 
-/* Transaction Status */
-.status-cleared { background: #dcfce7; color: #166534; }
-.status-pending { background: #fef3c7; color: #92400e; }
-.status-failed { background: #fee2e2; color: #991b1b; }
+/* Status Badges */
+.badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+.badge-pending { background: #fff7ed; color: #9a3412; }
+.badge-success { background: #f0fdf4; color: #166534; }
+.badge-failed { background: #fef2f2; color: #991b1b; }
