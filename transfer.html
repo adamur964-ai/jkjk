@@ -2,117 +2,95 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TB | Global Transfers</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transfer | Trust Bank</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen p-6 pb-32">
-    <div class="max-w-md mx-auto">
-        <header class="flex justify-between items-center mb-8">
-            <button onclick="history.back()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><i class="fas fa-arrow-left"></i></button>
-            <h1 class="text-sm font-black uppercase text-[#002147]">Transfer Node</h1>
-            <div class="w-10"></div>
-        </header>
-
-        <div class="bg-white p-6 rounded-3xl shadow-xl border border-slate-100">
-            <div class="flex gap-2 p-1 bg-slate-50 rounded-xl mb-6">
-                <button onclick="setType('internal')" id="btnInt" class="flex-1 py-3 text-[10px] font-black uppercase rounded-lg bg-[#002147] text-white">TB Internal</button>
-                <button onclick="setType('external')" id="btnExt" class="flex-1 py-3 text-[10px] font-black uppercase rounded-lg text-slate-400">External</button>
+<body class="bg-slate-50 pb-32">
+    <div id="header-container"></div>
+    <main class="max-w-md mx-auto px-6 pt-8">
+        <form id="transfer-form" class="space-y-6">
+            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-navy-900/5">
+                <div class="mb-8">
+                    <label>Recipient Account Number</label>
+                    <input type="text" id="target-acc" class="w-full" placeholder="10-digit number" maxlength="10" required>
+                </div>
+                <div class="mb-8">
+                    <label>Amount to Send</label>
+                    <input type="number" id="amount" class="w-full" placeholder="0.00" step="0.01" required>
+                </div>
+                <div class="mb-2">
+                    <label>Description (Optional)</label>
+                    <input type="text" id="description" class="w-full" placeholder="e.g. Monthly Rent">
+                </div>
             </div>
-
-            <div class="space-y-6">
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Destination Account / IBAN</label>
-                    <input type="text" id="target" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-4 font-bold text-sm outline-none focus:border-[#002147]" placeholder="10-digit TB Acc or IBAN...">
-                </div>
-
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Transfer Amount</label>
-                    <div class="relative">
-                        <span class="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-300">$</span>
-                        <input type="number" id="amt" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 font-black text-lg outline-none focus:border-[#002147]" placeholder="0.00">
-                    </div>
-                </div>
-
-                <div id="fxBox" class="hidden bg-slate-900 p-4 rounded-2xl">
-                    <p class="text-[9px] font-bold text-slate-500 uppercase">Estimated Conversion</p>
-                    <div class="flex justify-between items-center mt-1">
-                        <span id="fxVal" class="text-sm font-black text-white">€0.00</span>
-                        <span class="text-[8px] font-bold text-[#D4AF37] uppercase">Rate: 1 USD = 0.92 EUR</span>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Authorization PIN</label>
-                    <input type="password" id="pin" maxlength="4" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-2xl px-4 text-center text-2xl tracking-[20px] outline-none focus:border-[#002147]" placeholder="••••">
-                </div>
-
-                <button id="subBtn" class="w-full h-14 bg-[#002147] text-white rounded-2xl font-black uppercase tracking-widest shadow-lg">Execute Transfer</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="main-nav"></div>
+            <button type="submit" id="submit-btn" class="w-full btn-primary h-16 shadow-xl shadow-navy-900/20">Send Transfer</button>
+        </form>
+    </main>
+    <div id="nav-container"></div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { renderHeader, renderBottomNav } from './components.js';
         import { showToast } from './toast.js';
-        import { injectNavbar } from './components.js';
 
-        let type = 'internal';
-        let userData = null;
+        document.getElementById('header-container').innerHTML = renderHeader('Money Transfer', true);
+        document.getElementById('nav-container').innerHTML = renderBottomNav('transfer');
 
-        onAuthStateChanged(auth, async user => {
-            if(!user) return;
-            injectNavbar('transfer');
-            const snap = await getDoc(doc(db, "users", user.uid));
-            userData = snap.data();
-        });
+        document.getElementById('transfer-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const targetAccNum = document.getElementById('target-acc').value;
+            const amount = parseFloat(document.getElementById('amount').value);
 
-        window.setType = (t) => {
-            type = t;
-            document.getElementById('btnInt').className = t === 'internal' ? 'flex-1 py-3 text-[10px] font-black uppercase rounded-lg bg-[#002147] text-white' : 'flex-1 py-3 text-[10px] font-black uppercase rounded-lg text-slate-400';
-            document.getElementById('btnExt').className = t === 'external' ? 'flex-1 py-3 text-[10px] font-black uppercase rounded-lg bg-[#002147] text-white' : 'flex-1 py-3 text-[10px] font-black uppercase rounded-lg text-slate-400';
-            document.getElementById('fxBox').classList.toggle('hidden', t === 'internal');
-        };
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Validating...';
 
-        document.getElementById('amt').oninput = (e) => {
-            const v = e.target.value;
-            document.getElementById('fxVal').innerText = `€${(v * 0.92).toFixed(2)}`;
-        };
-
-        document.getElementById('subBtn').onclick = async () => {
-            const amt = Number(document.getElementById('amt').value);
-            const pin = document.getElementById('pin').value;
-            const target = document.getElementById('target').value;
-
-            if(!amt || !pin || !target) { showToast("All data required", "error"); return; }
-            if(amt > userData.balAvailable) { showToast("Insufficient balance", "error"); return; }
-            if(pin !== userData.transactionPin) { showToast("Incorrect PIN", "error"); return; }
-
-            document.getElementById('subBtn').disabled = true;
             try {
-                // Record
+                // 1. Check Sender Account
+                const senderQ = query(collection(db, "accounts"), where("ownerUid", "==", auth.currentUser.uid));
+                const senderSnap = await getDocs(senderQ);
+                const senderAcc = senderSnap.docs[0].data();
+                const senderDocId = senderSnap.docs[0].id;
+
+                if (senderAcc.availableBalance < amount) throw new Error("Insufficient balance.");
+
+                // 2. Check Recipient
+                const recipientQ = query(collection(db, "accounts"), where("accountNumber", "==", targetAccNum));
+                const recipientSnap = await getDocs(recipientQ);
+                if (recipientSnap.empty) throw new Error("Recipient account not found.");
+                
+                const recipientAcc = recipientSnap.docs[0].data();
+                const recipientDocId = recipientSnap.docs[0].id;
+
+                // 3. Process (Simulated Instant for Internal)
+                await updateDoc(doc(db, "accounts", senderDocId), { availableBalance: increment(-amount), totalBalance: increment(-amount) });
+                await updateDoc(doc(db, "accounts", recipientDocId), { availableBalance: increment(amount), totalBalance: increment(amount) });
+
+                // 4. Record Transaction
                 await addDoc(collection(db, "transactions"), {
                     uid: auth.currentUser.uid,
-                    type: 'TRANSFER',
-                    amount: amt,
-                    description: `${type.toUpperCase()} TRANSFER TO ${target}`,
-                    timestamp: new Date().toISOString(),
-                    status: 'PENDING'
+                    type: "TRANSFER",
+                    amount: amount,
+                    currency: senderAcc.currency,
+                    fromAccount: senderAcc.accountNumber,
+                    toAccount: targetAccNum,
+                    status: "SUCCESSFUL",
+                    timestamp: serverTimestamp(),
+                    description: document.getElementById('description').value || `Transfer to ${targetAccNum}`
                 });
 
-                await updateDoc(doc(db, "users", auth.currentUser.uid), {
-                    balAvailable: userData.balAvailable - amt
-                });
-
-                showToast("Transfer Protocol Initialized");
-                setTimeout(() => window.location.href="dashboard.html", 1500);
-            } catch (e) { showToast("Transfer Failed", "error"); }
+                showToast("Transfer Successful!", "success");
+                document.getElementById('transfer-form').reset();
+            } catch (err) {
+                showToast(err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Send Transfer';
+            }
         };
     </script>
 </body>
