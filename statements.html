@@ -2,49 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TB | Account Statements</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Statements | Trust Bank</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen p-6">
-    <div class="max-w-md mx-auto">
-        <header class="flex justify-between items-center mb-8">
-            <button onclick="history.back()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><i class="fas fa-arrow-left"></i></button>
-            <h1 class="text-sm font-black uppercase text-[#002147]">Statements</h1>
-            <div class="w-10"></div>
-        </header>
-
-        <div class="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 space-y-4">
-            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Available Reports</h3>
-            
-            <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl">
+<body class="bg-slate-50 pb-32">
+    <div id="header-container"></div>
+    <main class="max-w-md mx-auto px-6 pt-8">
+        <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 text-center space-y-6">
+            <i class="fa-solid fa-file-invoice-dollar text-4xl text-[#D4AF37]"></i>
+            <h2 class="text-xl font-black text-[#002147]">Generate Statement</h2>
+            <div class="text-left space-y-4">
                 <div>
-                    <p class="text-[11px] font-black text-slate-800 uppercase">March 2026</p>
-                    <p class="text-[8px] font-bold text-slate-400 uppercase">PDF Generation Ready</p>
+                    <label>Start Date</label>
+                    <input type="date" class="w-full">
                 </div>
-                <button onclick="mockDL('MAR-26')" class="w-10 h-10 bg-[#002147] text-white rounded-xl flex items-center justify-center"><i class="fas fa-download"></i></button>
-            </div>
-
-            <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl opacity-60">
                 <div>
-                    <p class="text-[11px] font-black text-slate-800 uppercase">February 2026</p>
-                    <p class="text-[8px] font-bold text-slate-400 uppercase">Archived in Vault</p>
+                    <label>End Date</label>
+                    <input type="date" class="w-full">
                 </div>
-                <button class="w-10 h-10 bg-slate-200 text-slate-400 rounded-xl flex items-center justify-center"><i class="fas fa-lock"></i></button>
             </div>
+            <button class="w-full btn-primary h-14" onclick="window.print()">Download PDF Statement</button>
         </div>
-
-        <p class="text-center text-[9px] font-bold text-slate-400 uppercase mt-8 px-10">Monthly statements are automatically cleared and deposited into your secure vault every 30 days.</p>
-    </div>
+    </main>
+    <div id="nav-container"></div>
 
     <script type="module">
-        import { showToast } from './toast.js';
-        window.mockDL = (mo) => {
-            showToast("Generating " + mo + " Statement...");
-            setTimeout(() => showToast("Statement Saved to Downloads"), 2000);
-        };
+        import { renderHeader, renderBottomNav } from './components.js';
+        document.getElementById('header-container').innerHTML = renderHeader('E-Statements', true);
+        document.getElementById('nav-container').innerHTML = renderBottomNav('settings');
     </script>
 </body>
 </html>
