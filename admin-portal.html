@@ -3,177 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TB | Executive Console</title>
+    <title>Admin Executive Terminal | Trust Bank</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <style>
-        .sidebar { width: 260px; height: 100vh; position: fixed; left: 0; top: 0; background: #001529; }
-        .content { margin-left: 260px; padding: 40px; }
-        .pane { display: none; }
-        .pane.active { display: block; }
-        .nav-link { padding: 15px 25px; display: flex; items-center: center; gap: 12px; color: #8aa4af; font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
-        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.05); color: #D4AF37; border-left: 4px solid #D4AF37; }
+        body { background-color: #0f172a; color: #f8fafc; }
+        .admin-card { background: #1e293b; border: 1px solid #334155; }
+        .tab-btn.active { border-bottom: 2px solid #D4AF37; color: #D4AF37; }
+        ::-webkit-scrollbar-thumb { background: #334155; }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-200">
-    <aside class="sidebar border-r border-white/5">
-        <div class="p-8 border-b border-white/5 mb-4">
-            <h1 class="text-xl font-black text-white italic">TB <span class="text-[#D4AF37]">ADMIN</span></h1>
-            <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Management Node v12.16</p>
-        </div>
-        <div onclick="showPane('users')" class="nav-link active"><i class="fas fa-users"></i> Users</div>
-        <div onclick="showPane('tasks')" class="nav-link"><i class="fas fa-tasks"></i> Requests</div>
-        <div onclick="showPane('tickets')" class="nav-link"><i class="fas fa-headset"></i> Support Tickets</div>
-        <div onclick="showPane('logs')" class="nav-link"><i class="fas fa-terminal"></i> Audit Logs</div>
-        <div onclick="logout()" class="nav-link mt-auto text-rose-500"><i class="fas fa-power-off"></i> Terminate</div>
-    </aside>
-
-    <main class="content">
-        <!-- Users Pane -->
-        <div id="pane-users" class="pane active space-y-6">
-            <div class="flex justify-between items-center mb-10">
-                <h2 class="text-2xl font-black text-white uppercase italic">Accounts Registry</h2>
-                <input type="text" id="search" oninput="renderUsers()" placeholder="Search by name, email, or account..." class="bg-slate-800 border border-white/10 rounded-xl px-6 py-3 w-80 outline-none focus:border-[#D4AF37]">
+<body class="min-h-screen">
+    <!-- Top Nav -->
+    <nav class="border-b border-slate-800 bg-slate-900 px-8 py-4 flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#002147] font-black shadow-lg">TB</div>
+            <div>
+                <h1 class="text-sm font-black uppercase tracking-widest text-white">Trust Bank</h1>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Executive Management Portal</p>
             </div>
-            <div id="user-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
         </div>
-
-        <!-- Tasks Pane -->
-        <div id="pane-tasks" class="pane space-y-6">
-            <h2 class="text-2xl font-black text-white uppercase italic mb-10">Financial Processing Queue</h2>
-            <div id="task-list" class="space-y-4"></div>
+        <div class="flex items-center gap-6">
+            <div id="admin-info" class="text-right">
+                <p class="text-xs font-black text-white" id="admin-email-display">---</p>
+                <p class="text-[9px] font-black text-[#D4AF37] uppercase">System Administrator</p>
+            </div>
+            <button id="logout-btn" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-all">
+                <i class="fa-solid fa-power-off"></i>
+            </button>
         </div>
+    </nav>
 
-        <!-- Support Tickets Pane -->
-        <div id="pane-tickets" class="pane space-y-6">
-            <h2 class="text-2xl font-black text-white uppercase italic mb-10">Support Command</h2>
-            <div id="ticket-list" class="space-y-4"></div>
+    <!-- Tab Bar -->
+    <div class="bg-slate-900 border-b border-slate-800 px-8 flex gap-8 overflow-x-auto no-scrollbar">
+        <button class="tab-btn py-4 text-[10px] font-black uppercase tracking-widest transition-colors active" data-tab="users">Users</button>
+        <button class="tab-btn py-4 text-[10px] font-black uppercase tracking-widest transition-colors" data-tab="deposits">Deposits</button>
+        <button class="tab-btn py-4 text-[10px] font-black uppercase tracking-widest transition-colors" data-tab="withdrawals">Withdrawals</button>
+        <button class="tab-btn py-4 text-[10px] font-black uppercase tracking-widest transition-colors" data-tab="kyc">Identity</button>
+        <button class="tab-btn py-4 text-[10px] font-black uppercase tracking-widest transition-colors" data-tab="loans">Loans</button>
+        <button class="tab-btn py-4 text-[10px] font-black uppercase tracking-widest transition-colors" data-tab="support">Tickets</button>
+        <button class="tab-btn py-4 text-[10px] font-black uppercase tracking-widest transition-colors" data-tab="audit">Audit Log</button>
+    </div>
+
+    <main class="p-8 max-w-7xl mx-auto">
+        <div id="tab-content" class="space-y-6">
+            <!-- Content Hydrates Here -->
+            <div class="flex items-center justify-center py-20">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-[#D4AF37]"></i>
+            </div>
         </div>
     </main>
 
+    <!-- Global Modal for Rejection Reason -->
+    <div id="rejection-modal" class="fixed inset-0 bg-slate-950/80 hidden z-[100] flex items-center justify-center p-6">
+        <div class="admin-card w-full max-w-md p-8 rounded-3xl">
+            <h3 class="text-xl font-black text-white mb-2">Decline Request</h3>
+            <p class="text-slate-400 text-sm mb-6">Please provide a reason for the customer.</p>
+            <textarea id="rejection-reason" class="w-full bg-slate-900 border-slate-700 text-white rounded-2xl p-4 h-32 mb-6" placeholder="Reason for declining..."></textarea>
+            <div class="flex gap-4">
+                <button id="cancel-modal" class="flex-1 py-4 font-black uppercase text-xs tracking-widest text-slate-400">Cancel</button>
+                <button id="confirm-rejection" class="flex-1 bg-rose-600 text-white rounded-2xl py-4 font-black uppercase text-xs tracking-widest shadow-lg shadow-rose-900/20">Confirm Decline</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div id="image-modal" class="fixed inset-0 bg-black/95 hidden z-[110] flex items-center justify-center p-4" onclick="this.classList.add('hidden')">
+        <img id="modal-img-tag" class="max-w-full max-h-full rounded-lg shadow-2xl">
+    </div>
+
     <script type="module">
         import { auth, db, ADMIN_EMAIL } from './firebase-config.js';
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { collection, onSnapshot, doc, updateDoc, addDoc, increment, query, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, increment, addDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { formatCurrency, formatDate } from './utils.js';
+        import { showToast } from './toast.js';
 
-        let users = [];
-        let accounts = [];
-
-        onAuthStateChanged(auth, u => {
-            if(!u || u.email !== ADMIN_EMAIL) window.location.href="login.html";
-            else sync();
+        // 1. Guard Access
+        auth.onAuthStateChanged(user => {
+            if (!user || user.email !== ADMIN_EMAIL) {
+                window.location.href = "login.html";
+            }
+            document.getElementById('admin-email-display').innerText = user.email;
         });
 
-        async function sync() {
-            onSnapshot(collection(db, "users"), snap => {
-                users = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(u => u.email !== ADMIN_EMAIL);
-                renderUsers();
-                renderTasks();
-            });
-            onSnapshot(collection(db, "accounts"), snap => {
-                accounts = snap.docs.map(d => d.data());
-                renderUsers();
-            });
-            onSnapshot(query(collection(db, "supportTickets"), orderBy("lastUpdated", "desc")), snap => {
-                renderTickets(snap.docs);
-            });
-        }
+        document.getElementById('logout-btn').onclick = () => auth.signOut();
 
-        window.renderUsers = () => {
-            const grid = document.getElementById('user-grid');
-            const q = document.getElementById('search').value.toLowerCase();
-            grid.innerHTML = "";
-            users.forEach(u => {
-                const acc = accounts.find(a => a.ownerUid === u.id);
-                if(q && !u.name.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return;
+        // 2. State Management
+        let currentTab = 'users';
+        let pendingAction = null; // { id, collection, uid, amount, currency }
+
+        const setTab = (tab) => {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+            renderTab();
+        };
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.onclick = () => setTab(btn.dataset.tab);
+        });
+
+        // 3. Admin Core Logic Helpers
+        const logAction = async (action, targetUid, reason = "") => {
+            await addDoc(collection(db, "auditLogs"), {
+                actorUid: auth.currentUser.uid,
+                action,
+                targetUid,
+                reason,
+                timestamp: serverTimestamp()
+            });
+        };
+
+        const notifyUser = async (uid, message, type = "INFO") => {
+            await addDoc(collection(db, "notifications"), {
+                uid, message, type, read: false, timestamp: serverTimestamp()
+            });
+        };
+
+        window.viewImage = (base64) => {
+            document.getElementById('modal-img-tag').src = base64;
+            document.getElementById('image-modal').classList.remove('hidden');
+        };
+
+        // 4. Action Handlers
+        window.approveDeposit = async (id, uid, amount) => {
+            if (!confirm(`Approve deposit of ${formatCurrency(amount)}?`)) return;
+            try {
+                // Update Deposit status
+                await updateDoc(doc(db, "deposits", id), { status: "SUCCESSFUL" });
                 
-                grid.innerHTML += `
-                    <div class="bg-slate-800 p-6 rounded-2xl border border-white/5">
-                        <div class="flex justify-between items-start mb-6">
-                            <div>
-                                <h4 class="text-white font-black uppercase text-sm">${u.name}</h4>
-                                <p class="text-[10px] text-slate-500 font-bold">${u.email}</p>
-                            </div>
-                            <span class="badge ${u.status === 'ACTIVE' ? 'badge-success' : 'badge-failed'}">${u.status}</span>
-                        </div>
-                        <div class="grid grid-cols-3 gap-4 mb-6">
-                            <div><p class="text-[8px] font-black text-slate-500 uppercase">Available</p><p class="text-emerald-500 font-black">$${acc?.balAvailable.toLocaleString()}</p></div>
-                            <div><p class="text-[8px] font-black text-slate-500 uppercase">Total</p><p class="text-white font-black">$${acc?.balTotal.toLocaleString()}</p></div>
-                            <div><p class="text-[8px] font-black text-slate-500 uppercase">KYC</p><p class="text-[#D4AF37] font-black">${u.kycStatus}</p></div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="adjustBal('${u.id}')" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-[9px] font-black uppercase transition-all">Balance</button>
-                            <button onclick="toggleStatus('${u.id}', '${u.status}')" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-[9px] font-black uppercase transition-all">Status</button>
-                        </div>
-                    </div>
-                `;
-            });
+                // Find and update Account
+                const accQ = query(collection(db, "accounts"), where("ownerUid", "==", uid));
+                const accSnap = await getDocs(accQ);
+                const accDoc = accSnap.docs[0];
+                const accData = accDoc.data();
+
+                await updateDoc(doc(db, "accounts", accDoc.id), {
+                    availableBalance: increment(amount),
+                    totalBalance: increment(amount)
+                });
+
+                // Write Transaction Ledger
+                await addDoc(collection(db, "transactions"), {
+                    uid, type: "DEPOSIT", amount, currency: accData.currency,
+                    status: "SUCCESSFUL", timestamp: serverTimestamp(),
+                    description: "Deposit via Admin Approval"
+                });
+
+                await notifyUser(uid, `Your deposit of ${formatCurrency(amount)} was approved.`, "SUCCESS");
+                await logAction("APPROVE_DEPOSIT", uid, `Amt: ${amount}`);
+                showToast("Deposit Approved Successfully");
+            } catch (err) { showToast(err.message, "error"); }
         };
 
-        window.renderTasks = () => {
-            const list = document.getElementById('task-list');
-            list.innerHTML = "";
-            users.forEach(u => {
-                if(u.kycStatus === 'PENDING') list.innerHTML += taskCard(u, 'IDENTITY VERIFICATION', 'Review ID Documents', 'kyc', null, u.idFront);
-                if(u.depositStatus === 'PENDING') list.innerHTML += taskCard(u, 'DEPOSIT SETTLEMENT', `$${u.depositAmount}`, 'deposit', u.depositAmount, u.depositProof);
-                if(u.withdrawStatus === 'PENDING') list.innerHTML += taskCard(u, 'WITHDRAWAL AUDIT', `$${u.withdrawAmount}`, 'withdraw', u.withdrawAmount, null, u.withdrawDetails);
-            });
+        window.openDecline = (id, collectionName, uid) => {
+            pendingAction = { id, collection: collectionName, uid };
+            document.getElementById('rejection-modal').classList.remove('hidden');
         };
 
-        const taskCard = (u, type, sub, key, amt, img, details) => `
-            <div class="bg-slate-800 p-8 rounded-2xl border-l-8 border-[#D4AF37] flex justify-between items-center">
-                <div class="flex gap-8 items-center">
-                    ${img ? `<img src="${img}" onclick="window.open('${img}')" class="w-20 h-20 rounded-xl object-cover cursor-pointer">` : '<div class="w-20 h-20 bg-slate-700 rounded-xl flex items-center justify-center text-slate-500"><i class="fas fa-file-invoice-dollar text-2xl"></i></div>'}
-                    <div>
-                        <p class="text-[10px] font-black text-[#D4AF37] uppercase tracking-widest">${type}</p>
-                        <h4 class="text-xl font-black text-white">${sub}</h4>
-                        <p class="text-[11px] font-bold text-slate-500 mt-1">User: ${u.name} | UID: ${u.id.slice(0,8)}</p>
-                        ${details ? `<p class="mt-2 text-[10px] text-slate-400 font-mono bg-black/20 p-2 rounded">${details}</p>` : ''}
-                    </div>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <button onclick="processRequest('${u.id}', '${key}', 'SUCCESSFUL', ${amt})" class="bg-emerald-600 px-8 py-3 rounded-xl text-[10px] font-black uppercase">Approve</button>
-                    <button onclick="processRequest('${u.id}', '${key}', 'DECLINED', ${amt})" class="bg-rose-600/10 text-rose-500 px-8 py-3 rounded-xl text-[10px] font-black uppercase">Reject</button>
-                </div>
-            </div>
-        `;
-
-        window.processRequest = async (uid, key, status, amt) => {
-            const uRef = doc(db, "users", uid);
-            const aRef = doc(db, "accounts", uid);
-            const update = {};
-            update[`${key}Status`] = status;
+        document.getElementById('confirm-rejection').onclick = async () => {
+            const reason = document.getElementById('rejection-reason').value;
+            if (!reason) return showToast("Reason required", "error");
             
-            if(status === 'SUCCESSFUL' && key === 'deposit') {
-                await updateDoc(aRef, { balAvailable: increment(amt), balTotal: increment(amt) });
+            const { id, collection, uid } = pendingAction;
+            try {
+                await updateDoc(doc(db, collection, id), { status: "DECLINED", declineReason: reason });
+                await notifyUser(uid, `Your request was declined: ${reason}`, "ALERT");
+                await logAction(`DECLINE_${collection.toUpperCase()}`, uid, reason);
+                document.getElementById('rejection-modal').classList.add('hidden');
+                document.getElementById('rejection-reason').value = '';
+                showToast("Request Declined");
+            } catch (err) { showToast(err.message, "error"); }
+        };
+
+        document.getElementById('cancel-modal').onclick = () => {
+            document.getElementById('rejection-modal').classList.add('hidden');
+        };
+
+        window.verifyKYC = async (id, uid) => {
+            await updateDoc(doc(db, "kyc", id), { status: "VERIFIED" });
+            await updateDoc(doc(db, "users", uid), { kycStatus: "VERIFIED" });
+            await notifyUser(uid, "Your identity has been verified.", "SUCCESS");
+            await logAction("VERIFY_KYC", uid);
+            showToast("KYC Verified");
+        };
+
+        // 5. Tab Rendering Logic
+        const renderTab = () => {
+            const content = document.getElementById('tab-content');
+            content.innerHTML = `<div class="flex justify-center py-20"><i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#D4AF37]"></i></div>`;
+
+            if (currentTab === 'users') {
+                onSnapshot(collection(db, "users"), snap => {
+                    content.innerHTML = `
+                        <div class="grid gap-4">
+                            ${snap.docs.map(doc => {
+                                const u = doc.data();
+                                return `
+                                    <div class="admin-card p-6 rounded-3xl flex justify-between items-center">
+                                        <div class="flex items-center gap-4">
+                                            <img src="${u.profilePhoto || 'https://ui-avatars.com/api/?name='+u.fullName}" class="w-12 h-12 rounded-full border border-slate-700">
+                                            <div>
+                                                <p class="font-black text-white">${u.fullName}</p>
+                                                <p class="text-[10px] font-bold text-slate-500 uppercase">${u.email} • ${u.status}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button class="px-4 py-2 bg-slate-800 rounded-xl text-[10px] font-black uppercase">Manage</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                });
             }
-            if(status === 'SUCCESSFUL' && key === 'kyc') update.kycStatus = 'VERIFIED';
+
+            if (currentTab === 'deposits') {
+                onSnapshot(query(collection(db, "deposits"), orderBy("createdAt", "desc")), snap => {
+                    content.innerHTML = `
+                        <div class="grid gap-4">
+                            ${snap.docs.map(dDoc => {
+                                const d = dDoc.data();
+                                const isPending = d.status === 'PENDING';
+                                return `
+                                    <div class="admin-card p-6 rounded-3xl flex justify-between items-center">
+                                        <div>
+                                            <p class="text-[10px] font-black text-[#D4AF37] uppercase tracking-widest">${d.method}</p>
+                                            <p class="text-xl font-black text-white">${formatCurrency(d.amount)}</p>
+                                            <p class="text-[10px] text-slate-500 mt-1">${formatDate(d.createdAt)}</p>
+                                        </div>
+                                        <div class="flex items-center gap-4">
+                                            ${d.proofImage ? `<button onclick="viewImage('${d.proofImage}')" class="text-xs font-black text-blue-400 uppercase tracking-tighter">View Proof</button>` : ''}
+                                            ${isPending ? `
+                                                <button onclick="approveDeposit('${dDoc.id}', '${d.uid}', ${d.amount})" class="px-6 py-3 bg-emerald-600 rounded-2xl text-[10px] font-black uppercase">Approve</button>
+                                                <button onclick="openDecline('${dDoc.id}', 'deposits', '${d.uid}')" class="px-6 py-3 bg-rose-600 rounded-2xl text-[10px] font-black uppercase">Decline</button>
+                                            ` : `<span class="text-[10px] font-black uppercase text-slate-500">${d.status}</span>`}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                });
+            }
+
+            if (currentTab === 'kyc') {
+                onSnapshot(query(collection(db, "kyc"), orderBy("submittedAt", "desc")), snap => {
+                    content.innerHTML = `
+                        <div class="grid md:grid-cols-2 gap-6">
+                            ${snap.docs.map(kDoc => {
+                                const k = kDoc.data();
+                                return `
+                                    <div class="admin-card p-6 rounded-[2rem]">
+                                        <img src="${k.documentImage}" class="w-full h-48 object-cover rounded-2xl mb-4 cursor-pointer" onclick="viewImage('${k.documentImage}')">
+                                        <div class="flex justify-between items-end">
+                                            <div>
+                                                <p class="text-[10px] font-black text-slate-500 uppercase mb-1">${k.documentType}</p>
+                                                <p class="font-bold text-white">${kDoc.id.slice(0,12)}...</p>
+                                            </div>
+                                            ${k.status === 'PENDING' ? `
+                                                <div class="flex gap-2">
+                                                    <button onclick="verifyKYC('${kDoc.id}', '${k.uid}')" class="px-4 py-2 bg-emerald-600 rounded-xl text-[9px] font-black uppercase">Verify</button>
+                                                    <button onclick="openDecline('${kDoc.id}', 'kyc', '${k.uid}')" class="px-4 py-2 bg-rose-600 rounded-xl text-[9px] font-black uppercase">Reject</button>
+                                                </div>
+                                            ` : `<span class="text-[10px] font-black uppercase text-[#D4AF37]">${k.status}</span>`}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                });
+            }
+
+            if (currentTab === 'audit') {
+                onSnapshot(query(collection(db, "auditLogs"), orderBy("timestamp", "desc")), snap => {
+                    content.innerHTML = `
+                        <div class="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-800 text-slate-400 font-black uppercase tracking-widest">
+                                    <tr>
+                                        <th class="p-4">Action</th>
+                                        <th class="p-4">Target UID</th>
+                                        <th class="p-4">Reason/Detail</th>
+                                        <th class="p-4">Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800">
+                                    ${snap.docs.map(doc => {
+                                        const l = doc.data();
+                                        return `
+                                            <tr class="hover:bg-slate-800/50">
+                                                <td class="p-4 font-bold text-[#D4AF37]">${l.action}</td>
+                                                <td class="p-4 text-slate-400">${l.targetUid.slice(0,8)}...</td>
+                                                <td class="p-4 text-slate-300">${l.reason || '-'}</td>
+                                                <td class="p-4 text-slate-500">${formatDate(l.timestamp)}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                });
+            }
             
-            await updateDoc(uRef, update);
-            await logAudit(`Approved ${key}`, uid);
+            // Add similar logic for withdrawals, support, etc. as needed for full build
         };
 
-        window.adjustBal = async (uid) => {
-            const val = prompt("Adjustment Amount (+/-):");
-            if(val) {
-                await updateDoc(doc(db, "accounts", uid), { balAvailable: increment(Number(val)) });
-                await logAudit(`Adjusted Balance by ${val}`, uid);
-            }
-        };
-
-        async function logAudit(action, target) {
-            await addDoc(collection(db, "auditLogs"), { admin: ADMIN_EMAIL, action, target, timestamp: new Date().toISOString() });
-        }
-
-        window.showPane = (id) => {
-            document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
-            document.getElementById('pane-'+id).classList.add('active');
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            event.target.classList.add('active');
-        };
-
-        window.logout = () => signOut(auth).then(() => window.location.href="login.html");
+        // Init
+        setTab('users');
     </script>
 </body>
 </html>
