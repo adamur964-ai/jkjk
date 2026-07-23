@@ -3,69 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TB | Ledger History</title>
+    <title>Transaction History | Trust Bank</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen pb-32">
-    <div id="app-header"></div>
-    <main class="p-6 max-w-md mx-auto">
-        <div class="flex gap-4 mb-8">
-            <input type="text" id="search" oninput="filterLedger()" placeholder="Search by description or Ref ID..." class="flex-1 h-12 px-4 rounded-xl border border-slate-200 text-xs font-bold bg-white">
-        </div>
-        <div id="ledger-body" class="space-y-4"></div>
+<body class="bg-slate-50 pb-32">
+    <div id="header-container"></div>
+    <main class="max-w-md mx-auto px-6 pt-8">
+        <div id="transaction-list" class="space-y-4"></div>
     </main>
-    <div id="bottom-nav"></div>
+    <div id="nav-container"></div>
+
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { collection, query, where, orderBy, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { renderNav, renderHeader } from './components.js';
-        import { formatMoney } from './utils.js';
+        import { collection, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { renderHeader, renderBottomNav, renderEmptyState } from './components.js';
+        import { formatCurrency, formatDate } from './utils.js';
 
-        let transactions = [];
-        let currency = 'USD';
+        document.getElementById('header-container').innerHTML = renderHeader('Transactions', true);
+        document.getElementById('nav-container').innerHTML = renderBottomNav('transactions');
 
-        onAuthStateChanged(auth, async user => {
-            if(!user) return;
-            renderNav('history'); renderHeader("Executive Ledger");
-            const aSnap = await getDoc(doc(db, "accounts", user.uid));
-            currency = aSnap.data().currency;
-
-            const q = query(collection(db, "transactions"), where("uid", "==", user.uid), orderBy("timestamp", "desc"));
-            onSnapshot(q, s => {
-                transactions = s.docs.map(d => ({id: d.id, ...d.data()}));
-                filterLedger();
-            });
-        });
-
-        window.filterLedger = () => {
-            const q = document.getElementById('search').value.toLowerCase();
-            const list = document.getElementById('ledger-body');
-            list.innerHTML = "";
-            transactions.forEach(tx => {
-                if(q && !tx.description.toLowerCase().includes(q)) return;
-                const isCr = ['DEPOSIT', 'LOAN'].includes(tx.type);
-                list.innerHTML += `
-                    <div class="glass-card p-6 border-l-4 ${isCr ? 'border-emerald-500' : 'border-slate-800'} animate-in">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">${tx.timestamp.split('T')[0]} • ${tx.type}</p>
-                                <h4 class="text-[11px] font-black text-slate-800 uppercase mt-1">${tx.description}</h4>
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                const q = query(collection(db, "transactions"), where("uid", "==", user.uid), orderBy("timestamp", "desc"));
+                onSnapshot(q, snap => {
+                    const cont = document.getElementById('transaction-list');
+                    if (snap.empty) { cont.innerHTML = renderEmptyState("No transactions yet."); return; }
+                    cont.innerHTML = snap.docs.map(doc => {
+                        const t = doc.data();
+                        return `
+                            <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center">
+                                <div>
+                                    <p class="text-xs font-black uppercase text-slate-400 mb-1">${t.type}</p>
+                                    <p class="font-bold text-[#002147]">${t.description}</p>
+                                    <p class="text-[10px] text-slate-400 mt-1">${formatDate(t.timestamp)}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-black text-sm">${formatCurrency(t.amount, t.currency)}</p>
+                                    <p class="text-[8px] font-black uppercase text-emerald-500 tracking-tighter">Completed</p>
+                                </div>
                             </div>
-                            <span class="badge ${tx.status === 'CLEARED' ? 'badge-success' : 'badge-pending'}">${tx.status}</span>
-                        </div>
-                        <div class="flex justify-between items-end mt-4">
-                            <p class="text-[8px] font-bold text-slate-300">REF: ${tx.id.toUpperCase().slice(0,10)}</p>
-                            <p class="text-base font-black ${isCr ? 'text-emerald-600' : 'text-slate-800'}">
-                                ${isCr ? '+' : '-'}${formatMoney(tx.amount, currency)}
-                            </p>
-                        </div>
-                    </div>
-                `;
-            });
-        };
+                        `;
+                    }).join('');
+                });
+            }
+        });
     </script>
 </body>
 </html>
