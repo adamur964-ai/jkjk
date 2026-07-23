@@ -2,70 +2,64 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TB | Alerts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | Trust Bank</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen p-6 pb-32">
-    <div class="max-w-md mx-auto">
-        <header class="flex justify-between items-center mb-8">
-            <button onclick="history.back()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><i class="fas fa-arrow-left"></i></button>
-            <h1 class="text-sm font-black uppercase text-[#002147]">Alert Center</h1>
-            <div class="w-10"></div>
-        </header>
-
-        <div id="noNotif" class="hidden text-center py-20">
-            <i class="far fa-bell-slash text-4xl text-slate-200 mb-4"></i>
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No unread alerts</p>
+<body class="bg-slate-50 pb-32">
+    <div id="header-container"></div>
+    <main class="max-w-md mx-auto px-6 pt-8 space-y-4" id="notification-list">
+        <!-- Skeleton -->
+        <div class="animate-pulse flex items-start gap-4 p-5 bg-white rounded-3xl">
+            <div class="w-10 h-10 bg-slate-100 rounded-full"></div>
+            <div class="space-y-2 flex-1">
+                <div class="h-3 bg-slate-100 rounded w-1/4"></div>
+                <div class="h-4 bg-slate-50 rounded w-full"></div>
+            </div>
         </div>
-
-        <div id="notifList" class="space-y-3">
-            <!-- Mock Alerts based on status changes -->
-        </div>
-    </div>
-
-    <div id="main-nav"></div>
+    </main>
+    <div id="nav-container"></div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-        import { doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-        import { injectNavbar } from './components.js';
+        import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { renderHeader, renderBottomNav, renderEmptyState } from './components.js';
+        import { formatDate } from './utils.js';
 
-        onAuthStateChanged(auth, user => {
-            if(!user) return;
-            injectNavbar('home'); // Notifications are part of home scope
+        document.getElementById('header-container').innerHTML = renderHeader('Alerts', true);
+        document.getElementById('nav-container').innerHTML = renderBottomNav('notifications');
 
-            onSnapshot(doc(db, "users", user.uid), snap => {
-                const d = snap.data();
-                const list = document.getElementById('notifList');
-                list.innerHTML = "";
-
-                const alerts = [
-                    { title: "Node Provisioned", msg: "Your banking account node was successfully initialized.", active: true },
-                    { title: "KYC Audit", msg: `Identity status: ${d.kycStatus}`, active: d.kycStatus !== 'PENDING' },
-                    { title: "Loan Update", msg: `Your loan application is ${d.loanStatus}`, active: d.loanStatus && d.loanStatus !== 'IDLE' },
-                    { title: "Card Status", msg: `Virtual card is ${d.cardStatus}`, active: d.cardStatus === 'ACTIVE' }
-                ];
-
-                const active = alerts.filter(a => a.active);
-                if(active.length === 0) {
-                    document.getElementById('noNotif').classList.remove('hidden');
-                } else {
-                    document.getElementById('noNotif').classList.add('hidden');
-                    list.innerHTML = active.map(a => `
-                        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                            <div class="flex justify-between items-start mb-1">
-                                <h4 class="text-[11px] font-black uppercase text-slate-800">${a.title}</h4>
-                                <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                const q = query(collection(db, "notifications"), 
+                          where("uid", "in", [user.uid, "all"]), 
+                          orderBy("timestamp", "desc"));
+                
+                onSnapshot(q, snap => {
+                    const cont = document.getElementById('notification-list');
+                    if (snap.empty) { cont.innerHTML = renderEmptyState("No alerts at this time."); return; }
+                    
+                    cont.innerHTML = snap.docs.map(dDoc => {
+                        const n = dDoc.data();
+                        const icon = n.type === 'ALERT' ? 'fa-triangle-exclamation text-rose-500' : 'fa-circle-info text-blue-500';
+                        return `
+                            <div class="flex items-start gap-4 p-5 ${n.read ? 'bg-white opacity-60' : 'bg-white shadow-sm border border-slate-100'} rounded-3xl transition-opacity">
+                                <div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center shrink-0">
+                                    <i class="fa-solid ${icon}"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-start mb-1">
+                                        <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider">${n.type || 'SYSTEM'}</p>
+                                        <p class="text-[8px] font-bold text-slate-300">${formatDate(n.timestamp)}</p>
+                                    </div>
+                                    <p class="text-xs text-[#002147] font-bold leading-relaxed">${n.message}</p>
+                                </div>
                             </div>
-                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-tight">${a.msg}</p>
-                        </div>
-                    `).join('');
-                }
-            });
+                        `;
+                    }).join('');
+                });
+            }
         });
     </script>
 </body>
