@@ -3,120 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TB | Asset Settlement</title>
+    <title>Deposit | Trust Bank</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen">
-    <div id="app-header"></div>
+<body class="bg-slate-50 pb-32">
+    <div id="header-container"></div>
 
-    <main class="p-6 max-w-md mx-auto">
-        <!-- Stage 1: Input -->
-        <div id="stage-input" class="animate-in">
-            <div class="glass-card p-6 space-y-6 input-group">
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Settlement Method</label>
-                    <select id="method">
-                        <option value="Wire Transfer">Institutional Wire / SWIFT</option>
-                        <option value="Mobile Check">Digital Check Deposit</option>
-                        <option value="Crypto">Blockchain Settlement (USDT/BTC)</option>
+    <main class="max-w-md mx-auto px-6 pt-8">
+        <form id="deposit-form" class="space-y-6">
+            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-navy-900/5">
+                <div class="mb-8">
+                    <label>Amount to Deposit</label>
+                    <div class="relative">
+                        <span class="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-300">$</span>
+                        <input type="number" id="amount" class="w-full pl-10" placeholder="0.00" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <label>Deposit Method</label>
+                    <select id="method" class="w-full" required>
+                        <option value="Wire Transfer">Bank Wire Transfer</option>
+                        <option value="Mobile Check">Mobile Check Deposit</option>
+                        <option value="ATM Deposit">ATM Deposit</option>
                     </select>
                 </div>
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Amount to Settle</label>
-                    <input type="number" id="amt" placeholder="0.00">
-                </div>
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Transmission Receipt</label>
-                    <div id="dropzone" onclick="document.getElementById('file').click()" class="h-40 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden cursor-pointer">
-                        <img id="prev" class="absolute inset-0 w-full h-full object-cover hidden z-10">
-                        <div id="placeholder">
-                            <i class="fas fa-cloud-upload-alt text-2xl text-slate-200 mb-2"></i>
-                            <p class="text-[10px] font-black text-slate-300 uppercase">Upload proof of transfer</p>
-                        </div>
+
+                <div class="mb-2">
+                    <label>Proof of Transaction</label>
+                    <div id="upload-zone" class="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center hover:border-[#002147] transition-colors cursor-pointer group">
+                        <input type="file" id="proof-file" class="hidden" accept="image/*" required>
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-300 group-hover:text-[#002147] mb-3"></i>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Upload Receipt Image</p>
                     </div>
-                    <input type="file" id="file" hidden accept="image/*">
+                    <div id="preview-container" class="hidden mt-4">
+                        <img id="image-preview" class="w-full h-48 object-cover rounded-2xl border border-slate-200">
+                        <button type="button" id="remove-img" class="mt-2 text-[10px] font-black uppercase text-rose-500 tracking-widest">Remove & Re-upload</button>
+                    </div>
                 </div>
-                <button id="subBtn" class="btn-primary w-full gradient-navy shadow-xl">Transmit Settlement</button>
             </div>
-        </div>
 
-        <!-- Stage 2: Pending -->
-        <div id="stage-pending" class="hidden text-center py-20 animate-in">
-            <div class="w-16 h-16 border-4 border-[#002147] border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-            <h2 class="text-2xl font-black text-[#002147] uppercase">Node Auditing</h2>
-            <p class="text-xs text-slate-400 font-bold uppercase mt-4 px-10">The TBX Treasury node is currently verifying your transmission proof.</p>
-        </div>
+            <button type="submit" id="submit-btn" class="w-full btn-primary h-16 shadow-xl shadow-navy-900/20">Submit for Review</button>
+        </form>
 
-        <!-- Stage 3: Success -->
-        <div id="stage-success" class="hidden text-center py-20 animate-in">
-            <i class="fas fa-check-circle text-6xl text-emerald-500 mb-6"></i>
-            <h2 class="text-2xl font-black text-emerald-600 uppercase">Settlement Cleared</h2>
-            <p class="text-xs text-slate-500 font-medium mt-4 px-10">Funds have been provisioned to your available balance.</p>
-            <a href="dashboard.html" class="btn-primary inline-block mt-8 px-12">Return Home</a>
-        </div>
-
-        <!-- Stage 4: Declined -->
-        <div id="stage-declined" class="hidden text-center py-20 animate-in">
-            <i class="fas fa-exclamation-triangle text-6xl text-rose-500 mb-6"></i>
-            <h2 class="text-2xl font-black text-rose-600 uppercase">Audit Failed</h2>
-            <p id="failReason" class="text-xs text-slate-500 font-medium mt-4 px-10">...</p>
-            <button onclick="location.reload()" class="btn-primary inline-block mt-8 px-12">Retry Settlement</button>
+        <div id="history-section" class="mt-12">
+            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-[#002147] mb-6">Recent Requests</h3>
+            <div id="deposit-list" class="space-y-4"></div>
         </div>
     </main>
 
+    <div id="nav-container"></div>
+
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { renderHeader } from './components.js';
-        import { compressImage } from './utils.js';
-        import { notify } from './toast.js';
+        import { collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { renderHeader, renderBottomNav, renderStatusBadge } from './components.js';
+        import { compressImage, formatCurrency, formatDate } from './utils.js';
+        import { showToast } from './toast.js';
 
-        let compressedData = null;
+        let compressedBase64 = null;
 
-        onAuthStateChanged(auth, user => {
-            if(!user) return;
-            renderHeader("Deposit Node");
+        document.getElementById('header-container').innerHTML = renderHeader('Deposit Funds', true);
+        document.getElementById('nav-container').innerHTML = renderBottomNav('dashboard');
 
-            onSnapshot(doc(db, "users", user.uid), snap => {
-                const status = snap.data().depositStatus || "IDLE";
-                document.querySelectorAll('main > div').forEach(d => d.classList.add('hidden'));
+        const uploadZone = document.getElementById('upload-zone');
+        const fileInput = document.getElementById('proof-file');
+        const previewCont = document.getElementById('preview-container');
+        const imgPreview = document.getElementById('image-preview');
 
-                if(status === "PENDING") document.getElementById('stage-pending').classList.remove('hidden');
-                else if(status === "SUCCESSFUL") document.getElementById('stage-success').classList.remove('hidden');
-                else if(status === "DECLINED") {
-                    document.getElementById('stage-declined').classList.remove('hidden');
-                    document.getElementById('failReason').innerText = snap.data().depositReason || "Verification unsuccessful.";
-                }
-                else document.getElementById('stage-input').classList.remove('hidden');
-            });
-        });
+        uploadZone.onclick = () => fileInput.click();
 
-        document.getElementById('file').onchange = async (e) => {
-            const file = e.target.files[0];
-            if(!file) return;
-            compressedData = await compressImage(file);
-            document.getElementById('prev').src = compressedData;
-            document.getElementById('prev').classList.remove('hidden');
-            document.getElementById('placeholder').classList.add('hidden');
+        fileInput.onchange = async (e) => {
+            if (e.target.files[0]) {
+                compressedBase64 = await compressImage(e.target.files[0]);
+                imgPreview.src = compressedBase64;
+                uploadZone.classList.add('hidden');
+                previewCont.classList.remove('hidden');
+            }
         };
 
-        document.getElementById('subBtn').onclick = async () => {
-            const amt = document.getElementById('amt').value;
-            if(!amt || !compressedData) return notify("Amount and proof required", "error");
-            
+        document.getElementById('remove-img').onclick = () => {
+            compressedBase64 = null;
+            fileInput.value = '';
+            uploadZone.classList.remove('hidden');
+            previewCont.classList.add('hidden');
+        };
+
+        document.getElementById('deposit-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+
             try {
-                await updateDoc(doc(db, "users", auth.currentUser.uid), {
-                    depositStatus: 'PENDING',
-                    depositAmount: Number(amt),
-                    depositProof: compressedData,
-                    depositMethod: document.getElementById('method').value
+                await addDoc(collection(db, "deposits"), {
+                    uid: auth.currentUser.uid,
+                    amount: parseFloat(document.getElementById('amount').value),
+                    method: document.getElementById('method').value,
+                    proofImage: compressedBase64,
+                    status: "PENDING",
+                    createdAt: serverTimestamp()
                 });
-                notify("Transmission Initialized");
-            } catch (e) { notify("Submission error", "error"); }
+                showToast("Deposit submitted for approval", "success");
+                document.getElementById('deposit-form').reset();
+                document.getElementById('remove-img').click();
+            } catch (err) {
+                showToast(err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Submit for Review';
+            }
         };
+
+        // Live list
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                const q = query(collection(db, "deposits"), where("uid", "==", user.uid), orderBy("createdAt", "desc"));
+                onSnapshot(q, (snap) => {
+                    document.getElementById('deposit-list').innerHTML = snap.docs.map(doc => {
+                        const d = doc.data();
+                        return `
+                            <div class="bg-white p-5 rounded-3xl border border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <p class="font-black text-[#002147]">${formatCurrency(d.amount)}</p>
+                                    <p class="text-[10px] font-bold text-slate-400">${formatDate(d.createdAt)}</p>
+                                </div>
+                                ${renderStatusBadge(d.status)}
+                            </div>
+                        `;
+                    }).join('');
+                });
+            }
+        });
     </script>
 </body>
 </html>
