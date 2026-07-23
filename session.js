@@ -1,16 +1,29 @@
-/* Trust Bank (TB) Local Session Persistence */
+/**
+ * TB Bank Session Caching
+ */
 
-const KEY = 'tb_user_session';
+const SESSION_KEY = 'tb_user_session';
 
-export const saveSession = (data) => {
-    sessionStorage.setItem(KEY, JSON.stringify(data));
+export const saveSession = (userData) => {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+        ...userData,
+        lastUpdated: Date.now()
+    }));
 };
 
 export const getSession = () => {
-    const data = sessionStorage.getItem(KEY);
+    const data = localStorage.getItem(SESSION_KEY);
     return data ? JSON.parse(data) : null;
 };
 
 export const clearSession = () => {
-    sessionStorage.removeItem(KEY);
+    localStorage.removeItem(SESSION_KEY);
+};
+
+export const updateSessionField = (field, value) => {
+    const session = getSession();
+    if (session) {
+        session[field] = value;
+        saveSession(session);
+    }
 };
