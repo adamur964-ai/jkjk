@@ -1,113 +1,88 @@
-/* Trust Bank (TB) Master Design System */
-@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&display=swap');
 
 :root {
     --tb-navy: #002147;
+    --tb-navy-deep: #001a3d;
     --tb-gold: #D4AF37;
-    --tb-gold-light: #F4DF4E;
-    --tb-slate: #1e293b;
-    --tb-light: #f1f5f9;
-    --tb-emerald: #10b981;
-    --tb-rose: #f43f5e;
-    --tb-white: #ffffff;
-    --glass: rgba(255, 255, 255, 0.8);
-}
-
-* { 
-    box-sizing: border-box; 
-    -webkit-tap-highlight-color: transparent; 
 }
 
 body {
-    background-color: var(--tb-light);
-    color: var(--tb-slate);
     font-family: 'Public Sans', sans-serif;
-    margin: 0;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
+    background-color: #f8fafc;
+    color: #1e293b;
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* Restored High-End Polish */
-.glass-card {
-    background: var(--glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 10px 30px rgba(0, 33, 71, 0.05);
-    border-radius: 24px;
+/* Specific Label Styling Signature */
+label, .field-label, .section-eyebrow {
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #64748b;
+    display: block;
+    margin-bottom: 0.5rem;
 }
 
-.tb-shadow {
-    box-shadow: 0 20px 40px -15px rgba(0, 33, 71, 0.15);
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 5px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
 }
 
-.gradient-navy {
-    background: linear-gradient(135deg, var(--tb-navy) 0%, #001529 100%);
+/* Inputs */
+input, select, textarea {
+    height: 3.5rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    transition: all 0.2s ease-in-out;
 }
 
-.gradient-gold {
-    background: linear-gradient(135deg, var(--tb-gold) 0%, #b8860b 100%);
-}
-
-/* Animations */
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-in {
-    animation: slideUp 0.5s ease forwards;
-}
-
-/* Custom Input Styles */
-.input-group input, .input-group select, .input-group textarea {
-    width: 100%;
-    padding: 14px 18px;
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
-    background: #fff;
-    font-size: 15px;
-    font-weight: 600;
-    transition: 0.2s ease;
+input:focus, select:focus, textarea:focus {
     outline: none;
-}
-
-.input-group input:focus {
+    background-color: #ffffff;
     border-color: var(--tb-navy);
     box-shadow: 0 0 0 4px rgba(0, 33, 71, 0.05);
 }
 
-/* Button UI */
+/* Buttons */
 .btn-primary {
     background-color: var(--tb-navy);
     color: white;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-radius: 14px;
-    padding: 16px;
-    transition: 0.3s;
-    border: none;
-    cursor: pointer;
+    border-radius: 1rem;
+    transition: transform 0.1s active;
 }
 
 .btn-primary:active {
-    transform: scale(0.96);
+    transform: scale(0.98);
 }
 
 .btn-gold {
     background-color: var(--tb-gold);
     color: var(--tb-navy);
+    font-weight: 800;
 }
 
-/* Status Badges */
-.badge {
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 10px;
-    font-weight: 900;
-    text-transform: uppercase;
+/* Glassmorphism/Elevated Cards */
+.tb-card {
+    background: white;
+    border-radius: 2rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 25px -5px rgba(0, 33, 71, 0.03);
 }
-.badge-pending { background: #fff7ed; color: #9a3412; }
-.badge-success { background: #f0fdf4; color: #166534; }
-.badge-failed { background: #fef2f2; color: #991b1b; }
+
+/* Admin Specific */
+.admin-dark {
+    background-color: #0f172a;
+    color: #f8fafc;
+}
