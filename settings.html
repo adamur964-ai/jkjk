@@ -2,88 +2,95 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TB | Security Settings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Settings | Trust Bank</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen pb-32">
-    <div class="max-w-md mx-auto p-6">
-        <header class="flex justify-between items-center mb-8">
-            <h1 class="text-lg font-black uppercase text-[#002147]">Security Center</h1>
-            <button onclick="logout()" class="text-[10px] font-black text-rose-500 uppercase">Terminate Session</button>
-        </header>
-
-        <!-- Profile Brief -->
-        <div class="bg-[#002147] p-6 rounded-3xl text-white shadow-xl mb-8">
-            <p id="setName" class="text-xl font-black">...</p>
-            <p id="setEmail" class="text-[10px] font-bold opacity-60 mt-1">...</p>
-            <div class="mt-4 pt-4 border-t border-white/10 flex gap-2">
-                <span id="setKyc" class="text-[8px] font-black uppercase px-2 py-1 rounded bg-white/10">...</span>
-                <span class="text-[8px] font-black uppercase px-2 py-1 rounded bg-white/10">Node Access: Active</span>
+<body class="bg-slate-50 pb-32">
+    <div id="header-container"></div>
+    <main class="max-w-md mx-auto px-6 pt-8 space-y-8">
+        <!-- Profile Pic -->
+        <div class="flex flex-col items-center gap-4">
+            <div class="relative group">
+                <img id="profile-img" src="https://ui-avatars.com/api/?background=002147&color=D4AF37&bold=true&name=User" class="w-24 h-24 rounded-full border-4 border-white shadow-xl object-cover">
+                <label for="img-upload" class="absolute bottom-0 right-0 w-8 h-8 bg-[#D4AF37] rounded-full flex items-center justify-center text-[#002147] border-2 border-white cursor-pointer shadow-lg">
+                    <i class="fa-solid fa-camera text-xs"></i>
+                </label>
+                <input type="file" id="img-upload" class="hidden" accept="image/*">
+            </div>
+            <div class="text-center">
+                <h2 id="display-name" class="text-xl font-black text-[#002147]">---</h2>
+                <p id="display-email" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">---</p>
             </div>
         </div>
 
-        <div class="space-y-4">
-            <!-- PIN Management -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <label class="text-[10px] font-bold text-slate-400 uppercase">Transaction PIN (4 Digits)</label>
-                <input type="password" id="newPin" maxlength="4" class="w-full h-14 bg-slate-50 border border-slate-200 rounded-xl px-4 mt-2 text-center text-2xl tracking-[20px]" placeholder="••••">
-                <button id="upPin" class="w-full h-12 bg-slate-900 text-white rounded-xl mt-4 font-bold text-xs uppercase">Sync Secure PIN</button>
-            </div>
-
-            <!-- KYC Shortcut -->
-            <a href="kyc.html" class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
-                <div>
-                    <p class="text-[11px] font-black text-slate-800 uppercase">Identity Verification</p>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase">Manage Government Credentials</p>
+        <div class="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden divide-y divide-slate-100">
+            <a href="kyc.html" class="flex items-center justify-between p-6 hover:bg-slate-50">
+                <div class="flex items-center gap-4">
+                    <i class="fa-solid fa-id-card text-slate-400 w-5"></i>
+                    <span class="text-xs font-black uppercase text-[#002147]">Identity (KYC)</span>
                 </div>
-                <i class="fas fa-chevron-right text-slate-300"></i>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
             </a>
-
-            <!-- Vault Shortcut -->
-            <a href="vault.html" class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
-                <div>
-                    <p class="text-[11px] font-black text-slate-800 uppercase">Digital Vault</p>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase">Stored Statements & Docs</p>
+            <a href="vault.html" class="flex items-center justify-between p-6 hover:bg-slate-50">
+                <div class="flex items-center gap-4">
+                    <i class="fa-solid fa-vault text-slate-400 w-5"></i>
+                    <span class="text-xs font-black uppercase text-[#002147]">Secure Vault</span>
                 </div>
-                <i class="fas fa-shield-alt text-slate-300"></i>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
             </a>
+            <a href="support.html" class="flex items-center justify-between p-6 hover:bg-slate-50">
+                <div class="flex items-center gap-4">
+                    <i class="fa-solid fa-headset text-slate-400 w-5"></i>
+                    <span class="text-xs font-black uppercase text-[#002147]">Help & Support</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+            </a>
+            <button id="logout-btn" class="w-full flex items-center gap-4 p-6 hover:bg-rose-50 group transition-colors">
+                <i class="fa-solid fa-power-off text-rose-500 w-5"></i>
+                <span class="text-xs font-black uppercase text-rose-500">Sign Out</span>
+            </button>
         </div>
-    </div>
-
-    <div id="main-nav"></div>
+    </main>
+    <div id="nav-container"></div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-        import { injectNavbar } from './components.js';
+        import { doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { renderHeader, renderBottomNav } from './components.js';
+        import { compressImage } from './utils.js';
         import { showToast } from './toast.js';
 
-        onAuthStateChanged(auth, user => {
-            if(!user) return;
-            injectNavbar('settings');
-            onSnapshot(doc(db, "users", user.uid), snap => {
-                const d = snap.data();
-                document.getElementById('setName').innerText = d.fullName;
-                document.getElementById('setEmail').innerText = d.email;
-                document.getElementById('setKyc').innerText = "KYC: " + d.kycStatus;
-            });
+        document.getElementById('header-container').innerHTML = renderHeader('Settings', true);
+        document.getElementById('nav-container').innerHTML = renderBottomNav('settings');
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                onSnapshot(doc(db, "users", user.uid), snap => {
+                    const data = snap.data();
+                    document.getElementById('display-name').innerText = data.fullName;
+                    document.getElementById('display-email').innerText = data.email;
+                    if (data.profilePhoto) {
+                        document.getElementById('profile-img').src = data.profilePhoto;
+                    }
+                });
+            }
         });
 
-        document.getElementById('upPin').onclick = async () => {
-            const pin = document.getElementById('newPin').value;
-            if(pin.length !== 4) return;
-            try {
-                await updateDoc(doc(db, "users", auth.currentUser.uid), { transactionPin: pin });
-                showToast("Transaction PIN Updated");
-                document.getElementById('newPin').value = "";
-            } catch (e) { showToast("Update Failed", "error"); }
+        document.getElementById('img-upload').onchange = async (e) => {
+            if (e.target.files[0]) {
+                try {
+                    const base64 = await compressImage(e.target.files[0]);
+                    await updateDoc(doc(db, "users", auth.currentUser.uid), { profilePhoto: base64 });
+                    showToast("Profile photo updated!");
+                } catch (err) { showToast(err.message, "error"); }
+            }
         };
 
-        window.logout = () => signOut(auth).then(() => window.location.href="login.html");
+        document.getElementById('logout-btn').onclick = () => {
+            auth.signOut().then(() => window.location.href = 'login.html');
+        };
     </script>
 </body>
 </html>
