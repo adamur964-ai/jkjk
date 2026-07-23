@@ -1,49 +1,43 @@
-/* Trust Bank (TB) Global Notification Component */
+/**
+ * TB Bank Toast Notification System
+ */
 
-export const notify = (msg, type = 'success') => {
-    const container = document.getElementById('toast-container') || createContainer();
-    const toast = document.createElement('div');
-    
-    const colors = {
-        success: '#10b981',
-        error: '#f43f5e',
-        info: '#0ea5e9'
-    };
-
-    toast.style.cssText = `
-        background: white;
-        color: #1e293b;
-        border-left: 6px solid ${colors[type]};
-        padding: 16px 24px;
-        margin-bottom: 10px;
-        border-radius: 12px;
-        font-weight: 800;
-        font-size: 13px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        text-transform: uppercase;
-        animation: toastIn 0.4s ease forwards;
-    `;
-
-    toast.innerText = msg;
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.animation = 'toastOut 0.4s ease forwards';
-        setTimeout(() => toast.remove(), 400);
-    }, 4000);
+const styleToast = () => {
+    if (document.getElementById('toast-container')) return;
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none';
+    document.body.appendChild(container);
 };
 
-const createContainer = () => {
-    const div = document.createElement('div');
-    div.id = 'toast-container';
-    div.style.cssText = 'position:fixed; top:20px; right:20px; z-index:99999; width: 300px;';
-    document.body.appendChild(div);
+export const showToast = (message, type = 'info') => {
+    styleToast();
+    const container = document.getElementById('toast-container');
     
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes toastIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes toastOut { to { opacity: 0; transform: translateX(50px); } }
+    const toast = document.createElement('div');
+    toast.className = `
+        pointer-events-auto px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 
+        transform transition-all duration-300 translate-x-full
+        ${type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 
+          type === 'error' ? 'bg-rose-50 border border-rose-200 text-rose-800' : 
+          'bg-slate-800 text-white'}
     `;
-    document.head.appendChild(style);
-    return div;
+
+    const icon = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-info-circle';
+    
+    toast.innerHTML = `
+        <i class="fa-solid ${icon}"></i>
+        <span class="font-medium text-sm">${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    // Animation in
+    setTimeout(() => toast.classList.remove('translate-x-full'), 10);
+
+    // Remove
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
 };
