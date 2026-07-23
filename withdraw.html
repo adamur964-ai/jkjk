@@ -3,89 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TB | Secure Exit</title>
+    <title>Withdraw | Trust Bank</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 min-h-screen">
-    <div id="app-header"></div>
-    <main class="p-6 max-w-md mx-auto">
-        <div id="stage-input" class="animate-in">
-            <div class="glass-card p-6 space-y-6 input-group">
-                <div class="bg-amber-50 p-4 rounded-xl border-l-4 border-amber-500">
-                    <p class="text-[10px] font-black text-amber-700 uppercase">Treasury Notice</p>
-                    <p class="text-xs font-bold text-amber-900 mt-1">High-value exits may be subject to a 24-hour audit hold.</p>
+<body class="bg-slate-50 pb-32">
+    <div id="header-container"></div>
+    <main class="max-w-md mx-auto px-6 pt-8">
+        <form id="withdraw-form" class="space-y-6">
+            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-navy-900/5">
+                <div class="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between">
+                    <span class="text-[10px] font-black uppercase text-rose-800 tracking-wider">Available</span>
+                    <span id="avail-balance" class="font-black text-rose-800 tracking-tight">$0.00</span>
                 </div>
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Withdrawal Method</label>
-                    <select id="method">
-                        <option value="ACH">Domestic ACH (1-3 Days)</option>
-                        <option value="WIRE">FedWire / SWIFT (Institutional)</option>
-                        <option value="CRYPTO">Blockchain Settlement (USDT)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Amount</label>
-                    <input type="number" id="amt" placeholder="0.00">
-                    <p id="avail" class="text-[9px] font-black text-[#D4AF37] uppercase mt-2">Available: $0.00</p>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Destination Details</label>
-                    <textarea id="details" rows="3" placeholder="Bank Name, Routing, and Account Number..."></textarea>
-                </div>
-                <div class="pt-4 border-t border-slate-50">
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Authorization PIN</label>
-                    <input type="password" id="pin" maxlength="4" style="letter-spacing: 15px; text-align: center;" placeholder="••••">
-                </div>
-                <button id="subBtn" class="btn-primary w-full gradient-navy shadow-xl">Authorize Payout</button>
-            </div>
-        </div>
 
-        <div id="stage-pending" class="hidden text-center py-20 animate-in">
-            <div class="w-16 h-16 border-4 border-[#002147] border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-            <h2 class="text-2xl font-black text-[#002147] uppercase">Auditing Exit</h2>
-            <p class="text-xs text-slate-400 font-bold uppercase mt-4 px-10">Verification protocol active. Check your transaction ledger for updates.</p>
-        </div>
+                <div class="mb-8">
+                    <label>Amount to Withdraw</label>
+                    <input type="number" id="amount" class="w-full" placeholder="0.00" required>
+                </div>
+
+                <div class="mb-8">
+                    <label>Destination Account / Method</label>
+                    <textarea id="details" class="w-full h-32 py-4" placeholder="Enter bank name, account number, routing, or wallet address..." required></textarea>
+                </div>
+            </div>
+            <button type="submit" id="submit-btn" class="w-full btn-primary h-16 shadow-xl shadow-navy-900/20">Request Withdrawal</button>
+        </form>
     </main>
+    <div id="nav-container"></div>
+
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { doc, updateDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { renderHeader } from './components.js';
-        import { formatMoney } from './utils.js';
-        import { notify } from './toast.js';
+        import { collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { renderHeader, renderBottomNav } from './components.js';
+        import { showToast } from './toast.js';
+        import { formatCurrency } from './utils.js';
 
-        let accountData = null;
-        let userData = null;
+        let currentBalance = 0;
+        let userCurrency = 'USD';
 
-        onAuthStateChanged(auth, async user => {
-            if(!user) return;
-            renderHeader("Withdraw Node");
-            const aSnap = await getDoc(doc(db, "accounts", user.uid));
-            const uSnap = await getDoc(doc(db, "users", user.uid));
-            accountData = aSnap.data();
-            userData = uSnap.data();
-            document.getElementById('avail').innerText = `Available: ${formatMoney(accountData.balAvailable, accountData.currency)}`;
+        document.getElementById('header-container').innerHTML = renderHeader('Withdraw Funds', true);
+        document.getElementById('nav-container').innerHTML = renderBottomNav('dashboard');
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const q = query(collection(db, "accounts"), where("ownerUid", "==", user.uid));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    const acc = snap.docs[0].data();
+                    currentBalance = acc.availableBalance;
+                    userCurrency = acc.currency;
+                    document.getElementById('avail-balance').innerText = formatCurrency(currentBalance, userCurrency);
+                }
+            }
         });
 
-        document.getElementById('subBtn').onclick = async () => {
-            const amt = Number(document.getElementById('amt').value);
-            const pin = document.getElementById('pin').value;
-            if(amt <= 0 || !pin) return notify("All fields required", "error");
-            if(amt > accountData.balAvailable) return notify("Insufficient Liquidity", "error");
-            if(pin !== userData.transactionPin) return notify("Incorrect Security PIN", "error");
+        document.getElementById('withdraw-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('amount').value);
+            const btn = document.getElementById('submit-btn');
+
+            if (amount > currentBalance) {
+                showToast("Insufficient funds available.", "error");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
 
             try {
-                await updateDoc(doc(db, "users", auth.currentUser.uid), {
-                    withdrawStatus: 'PENDING',
-                    withdrawAmount: amt,
-                    withdrawDetails: document.getElementById('details').value
+                await addDoc(collection(db, "withdrawals"), {
+                    uid: auth.currentUser.uid,
+                    amount: amount,
+                    currency: userCurrency,
+                    destinationDetails: document.getElementById('details').value,
+                    status: "PENDING",
+                    createdAt: serverTimestamp()
                 });
-                document.getElementById('stage-input').classList.add('hidden');
-                document.getElementById('stage-pending').classList.remove('hidden');
-                notify("Exit Protocol Initialized");
-            } catch (e) { notify("Protocol Error", "error"); }
+                showToast("Withdrawal request sent.", "success");
+                document.getElementById('withdraw-form').reset();
+            } catch (err) {
+                showToast(err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Request Withdrawal';
+            }
         };
     </script>
 </body>
