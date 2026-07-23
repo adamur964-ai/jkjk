@@ -1,25 +1,30 @@
-/* Trust Bank (TB) Shared Utilities */
+/**
+ * TB Bank Utilities
+ */
 
-// 1. Currency Formatting
-export const formatMoney = (amount, currency = 'USD') => {
-    const formatters = {
-        'USD': new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
-        'EUR': new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }),
-        'GBP': new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' })
-    };
-    return formatters[currency].format(amount || 0);
+export const formatCurrency = (amount, currency = 'USD') => {
+    const symbols = { 'USD': '$', 'EUR': '€', 'GBP': '£' };
+    const formatter = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+    return `${symbols[currency] || '$'}${formatter.format(amount)}`;
 };
 
-// 2. Mock Exchange Rate Logic (USD Base)
-const RATES = { 'USD': 1.0, 'EUR': 0.92, 'GBP': 0.79 };
-export const convertCurrency = (amount, from, to) => {
-    const base = amount / RATES[from];
-    return base * RATES[to];
+export const formatDate = (timestamp) => {
+    if (!timestamp) return '---';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 };
 
-// 3. Image Compression for Deposits
 export const compressImage = (file) => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = (event) => {
@@ -27,19 +32,41 @@ export const compressImage = (file) => {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800;
-                const scale = MAX_WIDTH / img.width;
-                canvas.width = MAX_WIDTH;
-                canvas.height = img.height * scale;
+                let width = img.width;
+                let height = img.height;
+                const maxSide = 800;
+
+                if (width > height) {
+                    if (width > maxSide) {
+                        height *= maxSide / width;
+                        width = maxSide;
+                    }
+                } else {
+                    if (height > maxSide) {
+                        width *= maxSide / height;
+                        height = maxSide;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/jpeg', 0.8));
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.6));
             };
         };
+        reader.onerror = (error) => reject(error);
     });
 };
 
-// 4. Reference ID Generator
-export const generateRef = () => {
-    return 'TBX-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+export const convertCurrency = (amount, from, to, rates) => {
+    if (from === to) return amount;
+    // Basic conversion logic: (amount / fromRate) * toRate
+    const baseAmount = amount / (rates[from] || 1);
+    return baseAmount * (rates[to] || 1);
+};
+
+export const maskAccountNumber = (accNum) => {
+    if (!accNum) return '****';
+    return `****${accNum.toString().slice(-4)}`;
 };
