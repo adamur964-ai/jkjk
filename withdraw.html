@@ -11,84 +11,78 @@
 <body class="bg-slate-50 pb-32">
     <div id="header-container"></div>
     <main class="max-w-md mx-auto px-6 pt-8">
-        <form id="withdraw-form" class="space-y-6">
-            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-navy-900/5">
-                <div class="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-between">
-                    <span class="text-[10px] font-black uppercase text-rose-800 tracking-wider">Available</span>
-                    <span id="avail-balance" class="font-black text-rose-800 tracking-tight">$0.00</span>
-                </div>
+        <div id="status-banner-container"></div>
 
+        <form id="withdraw-form" class="space-y-6">
+            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl">
                 <div class="mb-8">
                     <label>Amount to Withdraw</label>
                     <input type="number" id="amount" class="w-full" placeholder="0.00" required>
                 </div>
-
                 <div class="mb-8">
-                    <label>Destination Account / Method</label>
-                    <textarea id="details" class="w-full h-32 py-4" placeholder="Enter bank name, account number, routing, or wallet address..." required></textarea>
+                    <label>Bank / Wallet Details</label>
+                    <textarea id="details" class="w-full h-32 py-4" placeholder="Full Bank Info..." required></textarea>
                 </div>
             </div>
-            <button type="submit" id="submit-btn" class="w-full btn-primary h-16 shadow-xl shadow-navy-900/20">Request Withdrawal</button>
+            <button type="submit" id="submit-btn" class="w-full btn-primary h-16">Request Withdrawal</button>
         </form>
+
+        <div id="success-view" class="hidden"></div>
     </main>
     <div id="nav-container"></div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-        import { renderHeader, renderBottomNav } from './components.js';
-        import { showToast } from './toast.js';
+        import { collection, addDoc, serverTimestamp, query, where, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { renderHeader, renderBottomNav, renderDeclinedBanner, renderApprovedSuccess } from './components.js';
         import { formatCurrency } from './utils.js';
-
-        let currentBalance = 0;
-        let userCurrency = 'USD';
+        import { withPin } from './pin-guard.js';
 
         document.getElementById('header-container').innerHTML = renderHeader('Withdraw Funds', true);
         document.getElementById('nav-container').innerHTML = renderBottomNav('dashboard');
 
-        auth.onAuthStateChanged(async (user) => {
+        const form = document.getElementById('withdraw-form');
+        const bannerCont = document.getElementById('status-banner-container');
+        const successCont = document.getElementById('success-view');
+
+        auth.onAuthStateChanged(user => {
             if (user) {
-                const q = query(collection(db, "accounts"), where("ownerUid", "==", user.uid));
-                const snap = await getDocs(q);
-                if (!snap.empty) {
-                    const acc = snap.docs[0].data();
-                    currentBalance = acc.availableBalance;
-                    userCurrency = acc.currency;
-                    document.getElementById('avail-balance').innerText = formatCurrency(currentBalance, userCurrency);
-                }
+                const q = query(collection(db, "withdrawals"), where("uid", "==", user.uid), orderBy("createdAt", "desc"), limit(1));
+                onSnapshot(q, (snap) => {
+                    if (snap.empty) return;
+                    const d = snap.docs[0].data();
+                    bannerCont.innerHTML = "";
+                    form.classList.remove('hidden');
+                    successCont.classList.add('hidden');
+                    
+                    if (d.status === "PENDING") {
+                        form.querySelectorAll('input, textarea, button').forEach(el => el.disabled = true);
+                        document.getElementById('submit-btn').innerText = "Request Under Review...";
+                    } else if (d.status === "DECLINED") {
+                        bannerCont.innerHTML = renderDeclinedBanner(d.declineReason);
+                        form.querySelectorAll('input, textarea, button').forEach(el => el.disabled = false);
+                    } else if (d.status === "APPROVED") {
+                        form.classList.add('hidden');
+                        successCont.classList.remove('hidden');
+                        successCont.innerHTML = renderApprovedSuccess(`Withdrawal of ${formatCurrency(d.amount)} approved.`, () => location.reload());
+                    }
+                });
             }
         });
 
-        document.getElementById('withdraw-form').onsubmit = async (e) => {
+        form.onsubmit = (e) => {
             e.preventDefault();
-            const amount = parseFloat(document.getElementById('amount').value);
-            const btn = document.getElementById('submit-btn');
-
-            if (amount > currentBalance) {
-                showToast("Insufficient funds available.", "error");
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
-
-            try {
+            withPin(async () => {
+                const btn = document.getElementById('submit-btn');
+                btn.disabled = true;
                 await addDoc(collection(db, "withdrawals"), {
                     uid: auth.currentUser.uid,
-                    amount: amount,
-                    currency: userCurrency,
-                    destinationDetails: document.getElementById('details').value,
+                    amount: parseFloat(document.getElementById('amount').value),
+                    details: document.getElementById('details').value,
                     status: "PENDING",
                     createdAt: serverTimestamp()
                 });
-                showToast("Withdrawal request sent.", "success");
-                document.getElementById('withdraw-form').reset();
-            } catch (err) {
-                showToast(err.message, "error");
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = 'Request Withdrawal';
-            }
+            });
         };
     </script>
 </body>
