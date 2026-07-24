@@ -17,4 +17,4 @@ export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
 // CHANGE THIS to your preferred admin email address
-export const ADMIN_EMAIL = "admin@trustbank.com";
+export const ADMIN_EMAIL = "adamur964@gmail.com";
