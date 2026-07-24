@@ -16,9 +16,5 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-export const ADMIN_EMAIL = "adamumuhammedrabiu69@gmail.com";
-
-// Helper to check if current user is admin
-export const isAdmin = () => {
-    return auth.currentUser && auth.currentUser.email === ADMIN_EMAIL;
-};
+// IMPORTANT: Set your admin email here
+export const ADMIN_EMAIL = "admin@trustbank.com";
