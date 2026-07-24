@@ -1,12 +1,3 @@
-export const saveSession = (data) => {
-    localStorage.setItem('tb_session', JSON.stringify(data));
-};
-
-export const getSession = () => {
-    const data = localStorage.getItem('tb_session');
-    return data ? JSON.parse(data) : null;
-};
-
-export const clearSession = () => {
-    localStorage.removeItem('tb_session');
-};
+export const saveSession = (data) => localStorage.setItem('tb_user', JSON.stringify(data));
+export const getSession = () => JSON.parse(localStorage.getItem('tb_user'));
+export const clearSession = () => localStorage.removeItem('tb_user');
