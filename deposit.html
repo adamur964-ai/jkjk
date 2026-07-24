@@ -10,133 +10,90 @@
 </head>
 <body class="bg-slate-50 pb-32">
     <div id="header-container"></div>
-
     <main class="max-w-md mx-auto px-6 pt-8">
+        <div id="status-banner-container"></div>
+
         <form id="deposit-form" class="space-y-6">
-            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-navy-900/5">
+            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl">
                 <div class="mb-8">
                     <label>Amount to Deposit</label>
-                    <div class="relative">
-                        <span class="absolute left-5 top-1/2 -translate-y-1/2 font-black text-slate-300">$</span>
-                        <input type="number" id="amount" class="w-full pl-10" placeholder="0.00" step="0.01" required>
-                    </div>
+                    <input type="number" id="amount" class="w-full" placeholder="0.00" step="0.01" required>
                 </div>
-
                 <div class="mb-8">
-                    <label>Deposit Method</label>
+                    <label>Method</label>
                     <select id="method" class="w-full" required>
                         <option value="Wire Transfer">Bank Wire Transfer</option>
-                        <option value="Mobile Check">Mobile Check Deposit</option>
-                        <option value="ATM Deposit">ATM Deposit</option>
+                        <option value="Mobile Check">Mobile Check</option>
                     </select>
                 </div>
-
                 <div class="mb-2">
-                    <label>Proof of Transaction</label>
-                    <div id="upload-zone" class="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center hover:border-[#002147] transition-colors cursor-pointer group">
-                        <input type="file" id="proof-file" class="hidden" accept="image/*" required>
-                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-300 group-hover:text-[#002147] mb-3"></i>
-                        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Upload Receipt Image</p>
-                    </div>
-                    <div id="preview-container" class="hidden mt-4">
-                        <img id="image-preview" class="w-full h-48 object-cover rounded-2xl border border-slate-200">
-                        <button type="button" id="remove-img" class="mt-2 text-[10px] font-black uppercase text-rose-500 tracking-widest">Remove & Re-upload</button>
-                    </div>
+                    <label>Receipt Image</label>
+                    <input type="file" id="proof-file" class="w-full" accept="image/*" required>
                 </div>
             </div>
-
-            <button type="submit" id="submit-btn" class="w-full btn-primary h-16 shadow-xl shadow-navy-900/20">Submit for Review</button>
+            <button type="submit" id="submit-btn" class="w-full btn-primary h-16">Submit for Review</button>
         </form>
 
-        <div id="history-section" class="mt-12">
-            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-[#002147] mb-6">Recent Requests</h3>
-            <div id="deposit-list" class="space-y-4"></div>
-        </div>
+        <div id="success-view" class="hidden"></div>
     </main>
-
     <div id="nav-container"></div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-        import { renderHeader, renderBottomNav, renderStatusBadge } from './components.js';
-        import { compressImage, formatCurrency, formatDate } from './utils.js';
-        import { showToast } from './toast.js';
-
-        let compressedBase64 = null;
+        import { collection, addDoc, serverTimestamp, query, where, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { renderHeader, renderBottomNav, renderDeclinedBanner, renderApprovedSuccess } from './components.js';
+        import { compressImage, formatCurrency } from './utils.js';
+        import { withPin } from './pin-guard.js';
 
         document.getElementById('header-container').innerHTML = renderHeader('Deposit Funds', true);
         document.getElementById('nav-container').innerHTML = renderBottomNav('dashboard');
 
-        const uploadZone = document.getElementById('upload-zone');
-        const fileInput = document.getElementById('proof-file');
-        const previewCont = document.getElementById('preview-container');
-        const imgPreview = document.getElementById('image-preview');
+        const form = document.getElementById('deposit-form');
+        const bannerCont = document.getElementById('status-banner-container');
+        const successCont = document.getElementById('success-view');
 
-        uploadZone.onclick = () => fileInput.click();
-
-        fileInput.onchange = async (e) => {
-            if (e.target.files[0]) {
-                compressedBase64 = await compressImage(e.target.files[0]);
-                imgPreview.src = compressedBase64;
-                uploadZone.classList.add('hidden');
-                previewCont.classList.remove('hidden');
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                const q = query(collection(db, "deposits"), where("uid", "==", user.uid), orderBy("createdAt", "desc"), limit(1));
+                onSnapshot(q, (snap) => {
+                    if (snap.empty) return;
+                    const d = snap.docs[0].data();
+                    bannerCont.innerHTML = "";
+                    form.classList.remove('hidden');
+                    successCont.classList.add('hidden');
+                    
+                    if (d.status === "PENDING") {
+                        form.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+                        document.getElementById('submit-btn').innerText = "Under Review...";
+                    } else if (d.status === "DECLINED") {
+                        bannerCont.innerHTML = renderDeclinedBanner(d.declineReason);
+                        form.querySelectorAll('input, select, button').forEach(el => el.disabled = false);
+                        document.getElementById('submit-btn').innerText = "Resubmit Deposit";
+                    } else if (d.status === "APPROVED") {
+                        form.classList.add('hidden');
+                        successCont.classList.remove('hidden');
+                        successCont.innerHTML = renderApprovedSuccess(`Deposit of ${formatCurrency(d.amount)} approved.`, () => location.reload());
+                    }
+                });
             }
-        };
+        });
 
-        document.getElementById('remove-img').onclick = () => {
-            compressedBase64 = null;
-            fileInput.value = '';
-            uploadZone.classList.remove('hidden');
-            previewCont.classList.add('hidden');
-        };
-
-        document.getElementById('deposit-form').onsubmit = async (e) => {
+        form.onsubmit = (e) => {
             e.preventDefault();
-            const btn = document.getElementById('submit-btn');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
-
-            try {
+            withPin(async () => {
+                const btn = document.getElementById('submit-btn');
+                btn.disabled = true;
+                const base64 = await compressImage(document.getElementById('proof-file').files[0]);
                 await addDoc(collection(db, "deposits"), {
                     uid: auth.currentUser.uid,
                     amount: parseFloat(document.getElementById('amount').value),
                     method: document.getElementById('method').value,
-                    proofImage: compressedBase64,
+                    proofImage: base64,
                     status: "PENDING",
                     createdAt: serverTimestamp()
                 });
-                showToast("Deposit submitted for approval", "success");
-                document.getElementById('deposit-form').reset();
-                document.getElementById('remove-img').click();
-            } catch (err) {
-                showToast(err.message, "error");
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = 'Submit for Review';
-            }
+            });
         };
-
-        // Live list
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                const q = query(collection(db, "deposits"), where("uid", "==", user.uid), orderBy("createdAt", "desc"));
-                onSnapshot(q, (snap) => {
-                    document.getElementById('deposit-list').innerHTML = snap.docs.map(doc => {
-                        const d = doc.data();
-                        return `
-                            <div class="bg-white p-5 rounded-3xl border border-slate-100 flex items-center justify-between">
-                                <div>
-                                    <p class="font-black text-[#002147]">${formatCurrency(d.amount)}</p>
-                                    <p class="text-[10px] font-bold text-slate-400">${formatDate(d.createdAt)}</p>
-                                </div>
-                                ${renderStatusBadge(d.status)}
-                            </div>
-                        `;
-                    }).join('');
-                });
-            }
-        });
     </script>
 </body>
 </html>
