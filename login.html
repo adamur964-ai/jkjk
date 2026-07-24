@@ -105,7 +105,7 @@
                 const userCredential = await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
                 await handleAuthLogic(userCredential.user);
             } catch (error) {
-                showToast("Invalid credentials.", "error");
+                showToast("Invalid credentials or connection error.", "error");
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = 'Access Account';
             }
