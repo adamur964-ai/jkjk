@@ -1,53 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><title>Admin Portal | Trust Bank</title>
-    <script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal | Trust Bank</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <style>
+        .tab-btn.active { background: #1e293b; color: white; }
+        .tb-table th { padding: 12px; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; text-align: left; border-bottom: 2px solid #1e293b; }
+        .tb-table td { padding: 12px; font-size: 11px; border-bottom: 1px solid #1e293b; }
+    </style>
 </head>
-<body class="bg-[#0f172a] text-slate-200 min-h-screen">
-    <nav class="border-b border-slate-800 p-6 flex justify-between items-center bg-[#0f172a] sticky top-0 z-50">
-        <div class="flex items-center gap-4">
-            <div class="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center font-black text-[#002147]">ADM</div>
-            <h1 class="font-black uppercase tracking-widest text-xs">Trust Bank Control</h1>
-        </div>
-        <div class="flex gap-4">
-            <button class="tab-btn active px-4 py-2 text-[10px] font-black uppercase" data-tab="users">Users</button>
-            <button class="tab-btn px-4 py-2 text-[10px] font-black uppercase" data-tab="deposits">Deposits</button>
-            <button class="tab-btn px-4 py-2 text-[10px] font-black uppercase" data-tab="transfers">Transfers</button>
+<body class="bg-[#0f172a] text-slate-100 min-h-screen">
+    <nav class="bg-[#1e293b] p-6 flex justify-between items-center border-b border-slate-800">
+        <h1 class="font-black uppercase tracking-widest text-sm text-[#D4AF37]">Bank Master Control</h1>
+        <div class="flex items-center gap-6">
+            <span id="admin-email" class="text-[10px] font-bold text-slate-400">---</span>
+            <button id="logout-btn" class="bg-rose-500/10 text-rose-500 px-4 py-1.5 rounded-full text-[10px] font-black uppercase">Exit</button>
         </div>
     </nav>
 
-    <main class="p-8 max-w-6xl mx-auto" id="tab-content"></main>
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="flex gap-2 mb-8 overflow-x-auto pb-2">
+            <button class="tab-btn active px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest" data-tab="users">Users</button>
+            <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest" data-tab="deposits">Deposits</button>
+            <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest" data-tab="withdrawals">Withdrawals</button>
+            <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest" data-tab="transfers">Transfers</button>
+            <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest" data-tab="kyc">KYC</button>
+        </div>
+
+        <div id="tab-content" class="bg-[#1e293b]/30 rounded-[2rem] border border-slate-800 p-8"></div>
+    </div>
 
     <script type="module">
         import { auth, db, ADMIN_EMAIL } from './firebase-config.js';
-        import { collection, query, onSnapshot, doc, runTransaction, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { collection, query, onSnapshot, doc, updateDoc, runTransaction, serverTimestamp, getDocs, where, addDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { formatCurrency, formatDate } from './utils.js';
+        import { showToast } from './toast.js';
 
-        // TAB RENDER LOGIC
-        // ... (Implement tables with Approve/Decline buttons)
+        auth.onAuthStateChanged(user => {
+            if (!user || user.email !== ADMIN_EMAIL) window.location.href = "login.html";
+            document.getElementById('admin-email').innerText = user.email;
+        });
+        document.getElementById('logout-btn').onclick = () => auth.signOut();
 
-        window.approveTransfer = async (transferId) => {
+        let currentTab = 'users';
+        const content = document.getElementById('tab-content');
+
+        const loadTab = (tab) => {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            
+            if(tab === 'users') {
+                onSnapshot(collection(db, "users"), async (snap) => {
+                    const accs = await getDocs(collection(db, "accounts"));
+                    const accMap = {}; accs.forEach(a => accMap[a.data().ownerUid] = a.data());
+                    
+                    content.innerHTML = `
+                        <table class="tb-table w-full">
+                            <thead><tr><th>User</th><th>Account</th><th>Balance</th><th>KYC</th><th>Action</th></tr></thead>
+                            <tbody>${snap.docs.map(uDoc => {
+                                const u = uDoc.data();
+                                const a = accMap[u.uid] || {};
+                                return `<tr>
+                                    <td>${u.fullName}<br><span class="text-[9px] text-slate-500">${u.email}</span></td>
+                                    <td class="font-mono">${a.accountNumber || 'N/A'}</td>
+                                    <td class="text-[#D4AF37]">${formatCurrency(a.availableBalance)}</td>
+                                    <td>${u.kycStatus}</td>
+                                    <td><button onclick="manageUser('${u.uid}')" class="text-blue-400 font-bold uppercase text-[9px]">Manage</button></td>
+                                </tr>`;
+                            }).join('')}</tbody>
+                        </table>`;
+                });
+            } else {
+                const collName = tab === 'kyc' ? 'kyc' : tab;
+                onSnapshot(collection(db, collName), snap => {
+                    content.innerHTML = `
+                        <table class="tb-table w-full">
+                            <thead><tr><th>ID</th><th>User UID</th><th>Value</th><th>Status</th><th>Action</th></tr></thead>
+                            <tbody>${snap.docs.map(dDoc => {
+                                const d = dDoc.data();
+                                return `<tr>
+                                    <td>${dDoc.id.slice(0,8)}</td>
+                                    <td>${d.uid}</td>
+                                    <td>${d.amount ? formatCurrency(d.amount) : d.documentType}</td>
+                                    <td>${d.status}</td>
+                                    <td>
+                                        ${d.status === 'PENDING' ? `
+                                            <button onclick="approveRequest('${tab}', '${dDoc.id}')" class="text-emerald-400 mr-4 font-black uppercase text-[9px]">Approve</button>
+                                            <button onclick="declinePrompt('${tab}', '${dDoc.id}')" class="text-rose-400 font-black uppercase text-[9px]">Decline</button>
+                                        ` : '<span class="text-slate-600">Processed</span>'}
+                                    </td>
+                                </tr>`;
+                            }).join('')}</tbody>
+                        </table>`;
+                });
+            }
+        };
+
+        window.approveRequest = async (type, id) => {
             try {
                 await runTransaction(db, async (transaction) => {
-                    const transRef = doc(db, "transfers", transferId);
-                    const tSnap = await transaction.get(transRef);
-                    const data = tSnap.data();
+                    const reqRef = doc(db, type === 'kyc' ? 'kyc' : type, id);
+                    const reqSnap = await transaction.get(reqRef);
+                    const req = reqSnap.data();
 
-                    const senderQ = query(collection(db, "accounts"), where("ownerUid", "==", data.senderUid));
-                    // ... fetch recipient account, verify funds, then:
-                    transaction.update(senderAccRef, { availableBalance: increment(-data.amount) });
-                    transaction.update(recipientAccRef, { availableBalance: increment(data.amount) });
-                    transaction.update(transRef, { status: 'APPROVED' });
-                    
-                    // Write transaction logs for BOTH users
-                    const logRef1 = doc(collection(db, "transactions"));
-                    transaction.set(logRef1, { uid: data.senderUid, amount: data.amount, direction: 'debit', type: 'TRANSFER' ... });
-                    const logRef2 = doc(collection(db, "transactions"));
-                    transaction.set(logRef2, { uid: recipientUid, amount: data.amount, direction: 'credit', type: 'TRANSFER' ... });
+                    if(type === 'kyc') {
+                        transaction.update(reqRef, { status: 'VERIFIED' });
+                        transaction.update(doc(db, "users", req.uid), { kycStatus: 'VERIFIED' });
+                    } else if(type === 'deposits') {
+                        const accQ = query(collection(db, "accounts"), where("ownerUid", "==", req.uid));
+                        const accSnap = await getDocs(accQ);
+                        const accRef = doc(db, "accounts", accSnap.docs[0].id);
+                        transaction.update(accRef, { 
+                            availableBalance: req.amount + accSnap.docs[0].data().availableBalance,
+                            totalBalance: req.amount + accSnap.docs[0].data().totalBalance 
+                        });
+                        transaction.update(reqRef, { status: 'APPROVED' });
+                        const tId = Math.random().toString(36).substring(7);
+                        transaction.set(doc(db, "transactions", tId), {
+                            uid: req.uid, amount: req.amount, type: 'DEPOSIT', direction: 'credit',
+                            description: 'Deposit Approved', timestamp: serverTimestamp()
+                        });
+                    } else if(type === 'withdrawals') {
+                        const accQ = query(collection(db, "accounts"), where("ownerUid", "==", req.uid));
+                        const accSnap = await getDocs(accQ);
+                        const accRef = doc(db, "accounts", accSnap.docs[0].id);
+                        transaction.update(accRef, { 
+                            availableBalance: accSnap.docs[0].data().availableBalance - req.amount,
+                            totalBalance: accSnap.docs[0].data().totalBalance - req.amount
+                        });
+                        transaction.update(reqRef, { status: 'APPROVED' });
+                        const tId = Math.random().toString(36).substring(7);
+                        transaction.set(doc(db, "transactions", tId), {
+                            uid: req.uid, amount: req.amount, type: 'WITHDRAWAL', direction: 'debit',
+                            description: 'Withdrawal Approved', timestamp: serverTimestamp()
+                        });
+                    } else if(type === 'transfers') {
+                        const senderAccQ = query(collection(db, "accounts"), where("ownerUid", "==", req.uid));
+                        const senderSnap = await getDocs(senderAccQ);
+                        const recipAccQ = query(collection(db, "accounts"), where("accountNumber", "==", req.recipientAcc));
+                        const recipSnap = await getDocs(recipAccQ);
+
+                        transaction.update(doc(db, "accounts", senderSnap.docs[0].id), { availableBalance: senderSnap.docs[0].data().availableBalance - req.amount });
+                        transaction.update(doc(db, "accounts", recipSnap.docs[0].id), { availableBalance: recipSnap.docs[0].data().availableBalance + req.amount });
+                        transaction.update(reqRef, { status: 'APPROVED' });
+
+                        const t1 = Math.random().toString(36).substring(7);
+                        transaction.set(doc(db, "transactions", t1), {
+                            uid: req.uid, amount: req.amount, type: 'TRANSFER', direction: 'debit',
+                            description: `To ${req.recipientAcc}`, timestamp: serverTimestamp()
+                        });
+                        const t2 = Math.random().toString(36).substring(7);
+                        transaction.set(doc(db, "transactions", t2), {
+                            uid: recipSnap.docs[0].data().ownerUid, amount: req.amount, type: 'TRANSFER', direction: 'credit',
+                            description: `From ${senderSnap.docs[0].data().accountNumber}`, timestamp: serverTimestamp()
+                        });
+                    }
                 });
-            } catch (e) { console.error(e); }
+                showToast("Request Approved");
+            } catch(e) { showToast(e.message, "error"); }
         };
+
+        window.declinePrompt = async (type, id) => {
+            const reason = prompt("Reason for decline:");
+            if(!reason) return;
+            const ref = doc(db, type === 'kyc' ? 'kyc' : type, id);
+            await updateDoc(ref, { status: 'DECLINED', declineReason: reason });
+            if(type === 'kyc') {
+                const snap = await getDocs(query(collection(db, 'kyc'), where('__name__', '==', id)));
+                await updateDoc(doc(db, "users", snap.docs[0].data().uid), { kycStatus: 'REJECTED', kycDeclineReason: reason });
+            }
+            showToast("Request Declined");
+        };
+
+        window.manageUser = async (uid) => {
+            const amount = prompt("Adjustment Amount (e.g. 500 or -500):");
+            const reason = prompt("Adjustment Reason:");
+            if(!amount || !reason) return;
+            
+            const accQ = query(collection(db, "accounts"), where("ownerUid", "==", uid));
+            const accSnap = await getDocs(accQ);
+            const accRef = doc(db, "accounts", accSnap.docs[0].id);
+            const val = parseFloat(amount);
+            
+            await updateDoc(accRef, { availableBalance: accSnap.docs[0].data().availableBalance + val });
+            await addDoc(collection(db, "transactions"), {
+                uid, amount: Math.abs(val), type: 'ADMIN_ADJUSTMENT', direction: val > 0 ? 'credit' : 'debit',
+                description: reason, timestamp: serverTimestamp()
+            });
+            showToast("Balance Adjusted");
+        };
+
+        document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => loadTab(b.dataset.tab));
+        loadTab('users');
     </script>
 </body>
 </html>
