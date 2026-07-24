@@ -3,12 +3,12 @@ import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/
 import { getFirestore } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyA5xd_XuEBP9kWkJepiHMcN5YI12g_OCUw",
+  authDomain: "trustbank-91e66.firebaseapp.com",
+  projectId: "trustbank-91e66",
+  storageBucket: "trustbank-91e66.firebasestorage.app",
+  messagingSenderId: "503416043337",
+  appId: "1:503416043337:web:0e05859102033e6caacc98"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -16,5 +16,5 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// IMPORTANT: Set your admin email here
+// CHANGE THIS to your preferred admin email address
 export const ADMIN_EMAIL = "admin@trustbank.com";
