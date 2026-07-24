@@ -1,43 +1,20 @@
-/**
- * TB Bank Toast Notification System
- */
-
-const styleToast = () => {
-    if (document.getElementById('toast-container')) return;
-    const container = document.createElement('div');
-    container.id = 'toast-container';
-    container.className = 'fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none';
-    document.body.appendChild(container);
-};
-
 export const showToast = (message, type = 'info') => {
-    styleToast();
-    const container = document.getElementById('toast-container');
-    
     const toast = document.createElement('div');
-    toast.className = `
-        pointer-events-auto px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 
-        transform transition-all duration-300 translate-x-full
-        ${type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 
-          type === 'error' ? 'bg-rose-50 border border-rose-200 text-rose-800' : 
-          'bg-slate-800 text-white'}
-    `;
-
-    const icon = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-info-circle';
+    toast.className = `fixed top-10 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-2xl text-white text-xs font-black uppercase tracking-widest shadow-2xl transition-all duration-300 transform translate-y-[-20px] opacity-0`;
     
-    toast.innerHTML = `
-        <i class="fa-solid ${icon}"></i>
-        <span class="font-medium text-sm">${message}</span>
-    `;
+    if (type === 'error') toast.classList.add('bg-rose-600');
+    else if (type === 'success') toast.classList.add('bg-emerald-600');
+    else toast.classList.add('bg-[#002147]');
 
-    container.appendChild(toast);
+    toast.innerText = message;
+    document.body.appendChild(toast);
 
-    // Animation in
-    setTimeout(() => toast.classList.remove('translate-x-full'), 10);
-
-    // Remove
     setTimeout(() => {
-        toast.classList.add('opacity-0', 'translate-x-full');
+        toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+    }, 100);
+
+    setTimeout(() => {
+        toast.classList.add('translate-y-[-20px]', 'opacity-0');
         setTimeout(() => toast.remove(), 300);
-    }, 4000);
+    }, 3000);
 };
