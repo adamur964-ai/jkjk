@@ -65,8 +65,8 @@
     </div>
 
     <script type="module">
-        import { auth, db, googleProvider } from './firebase-config.js';
-        import { createUserWithEmailAndPassword, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+        import { auth, db } from './firebase-config.js';
+        import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
         import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { showToast } from './toast.js';
         import { saveSession } from './session.js';
@@ -89,10 +89,9 @@
             if (/[^A-Za-z0-9]/.test(val)) score++;
 
             strengthMeter.className = "strength-bar";
-            if (score === 0) { strengthText.innerText = "Strength: Weak"; currentStrength = "weak"; strengthMeter.classList.add('strength-weak'); }
-            else if (score === 1) { strengthText.innerText = "Strength: Weak"; currentStrength = "weak"; strengthMeter.classList.add('strength-weak'); }
-            else if (score === 2) { strengthText.innerText = "Strength: Medium"; currentStrength = "medium"; strengthMeter.classList.add('strength-medium'); }
-            else { strengthText.innerText = "Strength: Strong"; currentStrength = "strong"; strengthMeter.classList.add('strength-strong'); }
+            if (score <= 1) { strengthText.innerText = "Strength: Weak"; currentStrength = "weak"; strengthMeter.className = "strength-bar strength-weak"; }
+            else if (score === 2) { strengthText.innerText = "Strength: Medium"; currentStrength = "medium"; strengthMeter.className = "strength-bar strength-medium"; }
+            else { strengthText.innerText = "Strength: Strong"; currentStrength = "strong"; strengthMeter.className = "strength-bar strength-strong"; }
         };
 
         const createAccountInDb = async (uid, email, fullName, currency) => {
@@ -123,7 +122,10 @@
             e.preventDefault();
             matchError.classList.add('hidden');
 
-            if (passwordInput.value !== confirmInput.value) {
+            const emailValue = document.getElementById('email').value;
+            const passValue = passwordInput.value;
+
+            if (passValue !== confirmInput.value) {
                 matchError.classList.remove('hidden');
                 return;
             }
@@ -137,8 +139,9 @@
             submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
 
             try {
-                const userCredential = await createUserWithEmailAndPassword(auth, passwordInput.value, confirmInput.value);
-                await createAccountInDb(userCredential.user.uid, document.getElementById('email').value, document.getElementById('fullName').value, document.getElementById('currency').value);
+                // FIXED: emailValue passed first, then passValue
+                const userCredential = await createUserWithEmailAndPassword(auth, emailValue, passValue);
+                await createAccountInDb(userCredential.user.uid, emailValue, document.getElementById('fullName').value, document.getElementById('currency').value);
             } catch (error) {
                 showToast(error.message, 'error');
                 submitBtn.disabled = false;
