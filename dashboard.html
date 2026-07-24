@@ -12,9 +12,19 @@
     <div id="header-container"></div>
 
     <main class="max-w-md mx-auto px-6 pt-8 space-y-8">
+        <!-- Account ID Card -->
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Your Account ID</p>
+                <p id="acc-id-display" class="font-black text-[#002147] tracking-wider">---- ---- ----</p>
+            </div>
+            <button id="copy-acc-btn" class="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl hover:text-[#002147] transition-colors">
+                <i class="fa-solid fa-copy"></i>
+            </button>
+        </div>
+
         <!-- Balance Card -->
-        <div class="bg-[#002147] rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-navy-900/40">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37] opacity-10 rounded-full -mr-16 -mt-16"></div>
+        <div class="bg-[#002147] rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
             <div class="relative z-10">
                 <div class="flex justify-between items-start mb-6">
                     <div>
@@ -39,28 +49,20 @@
         <!-- Quick Actions -->
         <div class="grid grid-cols-4 gap-4">
             <a href="deposit.html" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100 hover:scale-105 transition-transform">
-                    <i class="fa-solid fa-arrow-down-to-bracket text-xl"></i>
-                </div>
-                <span class="text-[10px] font-black uppercase tracking-tighter text-slate-500">Deposit</span>
+                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100"><i class="fa-solid fa-arrow-down-to-bracket text-xl"></i></div>
+                <span class="text-[10px] font-black uppercase text-slate-500">Deposit</span>
             </a>
             <a href="withdraw.html" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100 hover:scale-105 transition-transform">
-                    <i class="fa-solid fa-money-bill-transfer text-xl"></i>
-                </div>
-                <span class="text-[10px] font-black uppercase tracking-tighter text-slate-500">Withdraw</span>
+                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100"><i class="fa-solid fa-money-bill-transfer text-xl"></i></div>
+                <span class="text-[10px] font-black uppercase text-slate-500">Withdraw</span>
             </a>
             <a href="transfer.html" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100 hover:scale-105 transition-transform">
-                    <i class="fa-solid fa-paper-plane text-xl"></i>
-                </div>
-                <span class="text-[10px] font-black uppercase tracking-tighter text-slate-500">Transfer</span>
+                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100"><i class="fa-solid fa-paper-plane text-xl"></i></div>
+                <span class="text-[10px] font-black uppercase text-slate-500">Transfer</span>
             </a>
             <a href="kyc.html" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100 hover:scale-105 transition-transform">
-                    <i class="fa-solid fa-user-shield text-xl"></i>
-                </div>
-                <span class="text-[10px] font-black uppercase tracking-tighter text-slate-500">KYC</span>
+                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100"><i class="fa-solid fa-user-shield text-xl"></i></div>
+                <span class="text-[10px] font-black uppercase text-slate-500">KYC</span>
             </a>
         </div>
 
@@ -68,21 +70,9 @@
         <section>
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xs font-black uppercase tracking-[0.2em] text-[#002147]">Recent Activity</h3>
-                <a href="transactions.html" class="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">View All</a>
+                <a href="transactions.html" class="text-[10px] font-black uppercase text-[#D4AF37]">View All</a>
             </div>
-            <div id="recent-transactions" class="space-y-4">
-                <!-- Skeleton Loading -->
-                <div class="animate-pulse flex items-center justify-between p-4 bg-white rounded-3xl border border-slate-100">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-slate-100 rounded-2xl"></div>
-                        <div class="space-y-2">
-                            <div class="h-3 w-24 bg-slate-100 rounded"></div>
-                            <div class="h-2 w-16 bg-slate-50 rounded"></div>
-                        </div>
-                    </div>
-                    <div class="h-4 w-12 bg-slate-100 rounded"></div>
-                </div>
-            </div>
+            <div id="recent-transactions" class="space-y-4"></div>
         </section>
     </main>
 
@@ -90,42 +80,40 @@
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
         import { collection, query, where, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { renderHeader, renderBottomNav, renderEmptyState } from './components.js';
-        import { formatCurrency, formatDate } from './utils.js';
+        import { formatCurrency, formatDate, copyToClipboard } from './utils.js';
+        import { showToast } from './toast.js';
 
-        onAuthStateChanged(auth, (user) => {
+        auth.onAuthStateChanged(user => {
             if (!user) { window.location.href = "login.html"; return; }
 
             document.getElementById('header-container').innerHTML = renderHeader(`Welcome, ${user.displayName?.split(' ')[0] || 'User'}`);
             document.getElementById('nav-container').innerHTML = renderBottomNav('dashboard');
 
-            // Listen to Account
-            const qAccount = query(collection(db, "accounts"), where("ownerUid", "==", user.uid));
-            onSnapshot(qAccount, (snapshot) => {
-                if (!snapshot.empty) {
-                    const acc = snapshot.docs[0].data();
+            onSnapshot(query(collection(db, "accounts"), where("ownerUid", "==", user.uid)), (snap) => {
+                if (!snap.empty) {
+                    const acc = snap.docs[0].data();
+                    document.getElementById('acc-id-display').innerText = acc.accountNumber;
                     document.getElementById('balance-main').innerText = formatCurrency(acc.availableBalance, acc.currency);
                     document.getElementById('balance-total').innerText = formatCurrency(acc.totalBalance, acc.currency);
                     document.getElementById('balance-savings').innerText = formatCurrency(acc.savingsBalance, acc.currency);
                     document.getElementById('currency-badge').innerText = acc.currency;
+                    document.getElementById('copy-acc-btn').onclick = () => {
+                        copyToClipboard(acc.accountNumber);
+                        showToast("Account ID copied!");
+                    };
                 }
             });
 
-            // Listen to Transactions
-            const qTrans = query(collection(db, "transactions"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(5));
-            onSnapshot(qTrans, (snapshot) => {
+            onSnapshot(query(collection(db, "transactions"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(5)), (snap) => {
                 const container = document.getElementById('recent-transactions');
-                if (snapshot.empty) {
-                    container.innerHTML = renderEmptyState("No transactions yet.");
-                    return;
-                }
-                container.innerHTML = snapshot.docs.map(doc => {
+                if (snap.empty) { container.innerHTML = renderEmptyState("No transactions yet."); return; }
+                container.innerHTML = snap.docs.map(doc => {
                     const t = doc.data();
-                    const isCredit = t.type === 'DEPOSIT' || (t.type === 'TRANSFER' && t.toAccount === t.accountNumber);
+                    const isCredit = t.direction === 'credit';
                     return `
-                        <div class="flex items-center justify-between p-4 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                        <div class="flex items-center justify-between p-4 bg-white rounded-3xl border border-slate-100">
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 ${isCredit ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} rounded-2xl flex items-center justify-center">
                                     <i class="fa-solid ${isCredit ? 'fa-arrow-down-left' : 'fa-arrow-up-right'}"></i>
