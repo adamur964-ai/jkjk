@@ -11,86 +11,83 @@
 <body class="bg-slate-50 pb-32">
     <div id="header-container"></div>
     <main class="max-w-md mx-auto px-6 pt-8">
+        <div id="status-banner-container"></div>
+
         <form id="transfer-form" class="space-y-6">
-            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-navy-900/5">
+            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-xl">
                 <div class="mb-8">
-                    <label>Recipient Account Number</label>
-                    <input type="text" id="target-acc" class="w-full" placeholder="10-digit number" maxlength="10" required>
+                    <label>Recipient Account ID</label>
+                    <input type="text" id="target-acc" class="w-full" placeholder="10-digit ID" maxlength="10" required>
                 </div>
                 <div class="mb-8">
-                    <label>Amount to Send</label>
+                    <label>Amount</label>
                     <input type="number" id="amount" class="w-full" placeholder="0.00" step="0.01" required>
                 </div>
                 <div class="mb-2">
-                    <label>Description (Optional)</label>
+                    <label>Description</label>
                     <input type="text" id="description" class="w-full" placeholder="e.g. Monthly Rent">
                 </div>
             </div>
-            <button type="submit" id="submit-btn" class="w-full btn-primary h-16 shadow-xl shadow-navy-900/20">Send Transfer</button>
+            <button type="submit" id="submit-btn" class="w-full btn-primary h-16">Send Transfer</button>
         </form>
+
+        <div id="success-view" class="hidden"></div>
     </main>
     <div id="nav-container"></div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { collection, query, where, getDocs, addDoc, serverTimestamp, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-        import { renderHeader, renderBottomNav } from './components.js';
-        import { showToast } from './toast.js';
+        import { collection, addDoc, serverTimestamp, query, where, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { renderHeader, renderBottomNav, renderDeclinedBanner, renderApprovedSuccess } from './components.js';
+        import { formatCurrency } from './utils.js';
+        import { withPin } from './pin-guard.js';
 
         document.getElementById('header-container').innerHTML = renderHeader('Money Transfer', true);
-        document.getElementById('nav-container').innerHTML = renderBottomNav('transfer');
+        document.getElementById('nav-container').innerHTML = renderBottomNav('dashboard');
 
-        document.getElementById('transfer-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submit-btn');
-            const targetAccNum = document.getElementById('target-acc').value;
-            const amount = parseFloat(document.getElementById('amount').value);
+        const form = document.getElementById('transfer-form');
+        const bannerCont = document.getElementById('status-banner-container');
+        const successCont = document.getElementById('success-view');
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Validating...';
-
-            try {
-                // 1. Check Sender Account
-                const senderQ = query(collection(db, "accounts"), where("ownerUid", "==", auth.currentUser.uid));
-                const senderSnap = await getDocs(senderQ);
-                const senderAcc = senderSnap.docs[0].data();
-                const senderDocId = senderSnap.docs[0].id;
-
-                if (senderAcc.availableBalance < amount) throw new Error("Insufficient balance.");
-
-                // 2. Check Recipient
-                const recipientQ = query(collection(db, "accounts"), where("accountNumber", "==", targetAccNum));
-                const recipientSnap = await getDocs(recipientQ);
-                if (recipientSnap.empty) throw new Error("Recipient account not found.");
-                
-                const recipientAcc = recipientSnap.docs[0].data();
-                const recipientDocId = recipientSnap.docs[0].id;
-
-                // 3. Process (Simulated Instant for Internal)
-                await updateDoc(doc(db, "accounts", senderDocId), { availableBalance: increment(-amount), totalBalance: increment(-amount) });
-                await updateDoc(doc(db, "accounts", recipientDocId), { availableBalance: increment(amount), totalBalance: increment(amount) });
-
-                // 4. Record Transaction
-                await addDoc(collection(db, "transactions"), {
-                    uid: auth.currentUser.uid,
-                    type: "TRANSFER",
-                    amount: amount,
-                    currency: senderAcc.currency,
-                    fromAccount: senderAcc.accountNumber,
-                    toAccount: targetAccNum,
-                    status: "SUCCESSFUL",
-                    timestamp: serverTimestamp(),
-                    description: document.getElementById('description').value || `Transfer to ${targetAccNum}`
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                const q = query(collection(db, "transfers"), where("uid", "==", user.uid), orderBy("createdAt", "desc"), limit(1));
+                onSnapshot(q, (snap) => {
+                    if (snap.empty) return;
+                    const d = snap.docs[0].data();
+                    bannerCont.innerHTML = "";
+                    form.classList.remove('hidden');
+                    successCont.classList.add('hidden');
+                    
+                    if (d.status === "PENDING") {
+                        form.querySelectorAll('input, button').forEach(el => el.disabled = true);
+                        document.getElementById('submit-btn').innerText = "Transfer Pending Review...";
+                    } else if (d.status === "DECLINED") {
+                        bannerCont.innerHTML = renderDeclinedBanner(d.declineReason);
+                        form.querySelectorAll('input, button').forEach(el => el.disabled = false);
+                    } else if (d.status === "APPROVED") {
+                        form.classList.add('hidden');
+                        successCont.classList.remove('hidden');
+                        successCont.innerHTML = renderApprovedSuccess(`Transfer of ${formatCurrency(d.amount)} sent.`, () => location.reload());
+                    }
                 });
-
-                showToast("Transfer Successful!", "success");
-                document.getElementById('transfer-form').reset();
-            } catch (err) {
-                showToast(err.message, "error");
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = 'Send Transfer';
             }
+        });
+
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            withPin(async () => {
+                const btn = document.getElementById('submit-btn');
+                btn.disabled = true;
+                await addDoc(collection(db, "transfers"), {
+                    uid: auth.currentUser.uid,
+                    recipientAcc: document.getElementById('target-acc').value,
+                    amount: parseFloat(document.getElementById('amount').value),
+                    description: document.getElementById('description').value || "No description",
+                    status: "PENDING",
+                    createdAt: serverTimestamp()
+                });
+            });
         };
     </script>
 </body>
