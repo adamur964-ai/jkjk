@@ -16,5 +16,5 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// CHANGE THIS to your preferred admin email address
-export const ADMIN_EMAIL = "adamur964@gmail.com";
+// YOUR ADMIN EMAIL
+export const ADMIN_EMAIL = "rabiu666666@gmail.com";
