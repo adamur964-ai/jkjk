@@ -1,157 +1,53 @@
-<script type="module">
-    import { auth, db, ADMIN_EMAIL } from './firebase-config.js';
-    import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, increment, addDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-    import { formatCurrency, formatDate, formatIBAN, generateReference } from './utils.js';
-    import { renderStatusBadge } from './components.js';
-    import { showToast } from './toast.js';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><title>Admin Portal | Trust Bank</title>
+    <script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#0f172a] text-slate-200 min-h-screen">
+    <nav class="border-b border-slate-800 p-6 flex justify-between items-center bg-[#0f172a] sticky top-0 z-50">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center font-black text-[#002147]">ADM</div>
+            <h1 class="font-black uppercase tracking-widest text-xs">Trust Bank Control</h1>
+        </div>
+        <div class="flex gap-4">
+            <button class="tab-btn active px-4 py-2 text-[10px] font-black uppercase" data-tab="users">Users</button>
+            <button class="tab-btn px-4 py-2 text-[10px] font-black uppercase" data-tab="deposits">Deposits</button>
+            <button class="tab-btn px-4 py-2 text-[10px] font-black uppercase" data-tab="transfers">Transfers</button>
+        </div>
+    </nav>
 
-    // 1. Guard Access
-    auth.onAuthStateChanged(user => {
-        if (!user || user.email !== ADMIN_EMAIL) {
-            window.location.href = "login.html";
-        }
-        document.getElementById('admin-email-display').innerText = user.email;
-    });
+    <main class="p-8 max-w-6xl mx-auto" id="tab-content"></main>
 
-    document.getElementById('logout-btn').onclick = () => auth.signOut();
+    <script type="module">
+        import { auth, db, ADMIN_EMAIL } from './firebase-config.js';
+        import { collection, query, onSnapshot, doc, runTransaction, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
-    // 2. State Management
-    let currentTab = 'users';
-    let usersList = [];      // Stores all users
-    let accountsMap = {};    // Maps ownerUid -> account data
-    let userSearchTerm = '';
-    let userPage = 0;
-    const USERS_PER_PAGE = 20; // Increased to see more at once
+        // TAB RENDER LOGIC
+        // ... (Implement tables with Approve/Decline buttons)
 
-    // 3. Live Listeners (This ensures the list updates for the admin automatically)
-    
-    // Listen for Accounts first
-    onSnapshot(collection(db, "accounts"), (snap) => {
-        const accs = {};
-        snap.forEach(doc => {
-            const data = doc.data();
-            accs[data.ownerUid] = { docId: doc.id, ...data };
-        });
-        accountsMap = accs;
-        if (currentTab === 'users') renderTab();
-    });
+        window.approveTransfer = async (transferId) => {
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const transRef = doc(db, "transfers", transferId);
+                    const tSnap = await transaction.get(transRef);
+                    const data = tSnap.data();
 
-    // Listen for Users
-    onSnapshot(collection(db, "users"), (snap) => {
-        const users = [];
-        snap.forEach(doc => {
-            users.push({ uid: doc.id, ...doc.data() });
-        });
-        // Sort by newest first
-        usersList = users.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        if (currentTab === 'users') renderTab();
-    });
-
-    // 4. Tab Navigation
-    const setTab = (tab) => {
-        currentTab = tab;
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === tab);
-        });
-        renderTab();
-    };
-
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.onclick = () => setTab(btn.dataset.tab);
-    });
-
-    // 5. Render Logic
-    const renderTab = () => {
-        const content = document.getElementById('tab-content');
-
-        if (currentTab === 'users') {
-            const term = userSearchTerm.toLowerCase();
-            
-            // Filter users based on search
-            const filtered = usersList.filter(u => 
-                (u.fullName || '').toLowerCase().includes(term) || 
-                (u.email || '').toLowerCase().includes(term) ||
-                (accountsMap[u.uid]?.accountNumber || '').toString().includes(term)
-            );
-
-            const totalPages = Math.ceil(filtered.length / USERS_PER_PAGE) || 1;
-            const start = userPage * USERS_PER_PAGE;
-            const pageRows = filtered.slice(start, start + USERS_PER_PAGE);
-
-            content.innerHTML = `
-                <div class="flex justify-between items-center mb-4 gap-4">
-                    <div class="relative flex-1 max-w-md">
-                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                        <input id="user-search-input" value="${userSearchTerm}" placeholder="Search all users..." class="w-full bg-slate-900 border border-slate-700 text-white text-sm rounded-xl pl-10 pr-4 h-11">
-                    </div>
-                    <p class="text-[10px] font-black text-slate-500 uppercase">${filtered.length} Total Registered Users</p>
-                </div>
-                <div class="bg-slate-900 rounded-3xl border border-slate-800 overflow-x-auto">
-                    <table class="tb-table w-full">
-                        <thead class="bg-slate-800 text-slate-400 text-[9px] uppercase tracking-widest">
-                            <tr>
-                                <th class="p-4 text-left">Customer</th>
-                                <th class="p-4 text-left">Account Number</th>
-                                <th class="p-4 text-left">Balance</th>
-                                <th class="p-4 text-left">Status</th>
-                                <th class="p-4 text-left">Joined</th>
-                                <th class="p-4 text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-800">
-                            ${pageRows.length === 0 ? `<tr><td colspan="6" class="p-10 text-center text-slate-500">No users found.</td></tr>` : pageRows.map(u => {
-                                const acc = accountsMap[u.uid] || {};
-                                return `
-                                <tr class="hover:bg-slate-800/40 transition-colors">
-                                    <td class="p-4">
-                                        <p class="text-white font-black text-xs">${u.fullName || 'Anonymous'}</p>
-                                        <p class="text-[10px] text-slate-500">${u.email}</p>
-                                    </td>
-                                    <td class="p-4 text-slate-400 font-mono text-xs">${acc.accountNumber || 'NO ACCOUNT'}</td>
-                                    <td class="p-4 text-[#D4AF37] font-black text-xs">${formatCurrency(acc.availableBalance, acc.currency)}</td>
-                                    <td class="p-4">${renderStatusBadge(acc.status || 'active')}</td>
-                                    <td class="p-4 text-slate-500 text-[10px]">${formatDate(u.createdAt)}</td>
-                                    <td class="p-4 text-right">
-                                        <button onclick="openManageModal('${u.uid}')" class="px-4 py-2 bg-slate-800 rounded-lg text-[9px] font-black uppercase text-white hover:bg-white hover:text-slate-900 transition-all">Manage</button>
-                                    </td>
-                                </tr>
-                            `}).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="flex justify-center items-center gap-4 mt-6">
-                    <button id="prev-btn" ${userPage === 0 ? 'disabled' : ''} class="w-10 h-10 rounded-full bg-slate-800 text-white disabled:opacity-30"><i class="fa-solid fa-chevron-left"></i></button>
-                    <span class="text-[10px] font-black text-slate-500 uppercase">Page ${userPage + 1} of ${totalPages}</span>
-                    <button id="next-btn" ${userPage >= totalPages - 1 ? 'disabled' : ''} class="w-10 h-10 rounded-full bg-slate-800 text-white disabled:opacity-30"><i class="fa-solid fa-chevron-right"></i></button>
-                </div>
-            `;
-
-            // Re-attach Search Event
-            const searchInput = document.getElementById('user-search-input');
-            searchInput.oninput = (e) => {
-                userSearchTerm = e.target.value;
-                userPage = 0; // Reset to page 1 on search
-                renderTab();
-            };
-            // Keep focus on input after re-render
-            if (userSearchTerm) {
-                searchInput.focus();
-                searchInput.setSelectionRange(userSearchTerm.length, userSearchTerm.length);
-            }
-
-            document.getElementById('prev-btn').onclick = () => { if(userPage > 0) { userPage--; renderTab(); } };
-            document.getElementById('next-btn').onclick = () => { if(userPage < totalPages - 1) { userPage++; renderTab(); } };
-            
-            return;
-        }
-
-        // ... rest of your tab logic (deposits, withdrawals, etc.) remains here
-        content.innerHTML = `<div class="flex justify-center py-20"><i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#D4AF37]"></i></div>`;
-    };
-
-    // Initialize
-    setTab('users');
-
-    // Make global for button clicks
-    window.openManageModal = (uid) => { /* Your existing Manage Modal Logic */ };
-</script>
+                    const senderQ = query(collection(db, "accounts"), where("ownerUid", "==", data.senderUid));
+                    // ... fetch recipient account, verify funds, then:
+                    transaction.update(senderAccRef, { availableBalance: increment(-data.amount) });
+                    transaction.update(recipientAccRef, { availableBalance: increment(data.amount) });
+                    transaction.update(transRef, { status: 'APPROVED' });
+                    
+                    // Write transaction logs for BOTH users
+                    const logRef1 = doc(collection(db, "transactions"));
+                    transaction.set(logRef1, { uid: data.senderUid, amount: data.amount, direction: 'debit', type: 'TRANSFER' ... });
+                    const logRef2 = doc(collection(db, "transactions"));
+                    transaction.set(logRef2, { uid: recipientUid, amount: data.amount, direction: 'credit', type: 'TRANSFER' ... });
+                });
+            } catch (e) { console.error(e); }
+        };
+    </script>
+</body>
+</html>
