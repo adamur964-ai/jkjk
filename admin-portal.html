@@ -11,11 +11,13 @@
         .tab-btn.active { background: #334155; color: white; border-color: #D4AF37; }
         .tb-table th { padding: 12px; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #94a3b8; text-align: left; border-bottom: 2px solid #334155; }
         .tb-table td { padding: 12px; font-size: 11px; border-bottom: 1px solid #334155; }
+        #chat-body::-webkit-scrollbar { width: 4px; }
+        #chat-body::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-[#0f172a] text-slate-100 min-h-screen">
     <nav class="bg-[#1e293b] p-6 flex justify-between items-center border-b border-slate-800">
-        <h1 class="font-black uppercase tracking-widest text-sm text-[#D4AF37]">Central Control</h1>
+        <h1 class="font-black uppercase tracking-widest text-sm text-[#D4AF37]">Admin Console</h1>
         <div class="flex items-center gap-6">
             <span id="admin-email" class="text-[10px] font-bold text-slate-400 uppercase">---</span>
             <button id="logout-btn" class="bg-rose-500/10 text-rose-500 px-4 py-1.5 rounded-full text-[10px] font-black uppercase">Exit</button>
@@ -29,26 +31,26 @@
             <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="withdrawals">Withdrawals</button>
             <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="transfers">Transfers</button>
             <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="kyc">KYC</button>
-            <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="supportTickets">Support</button>
+            <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="supportTickets">Live Chat</button>
         </div>
 
         <div id="tab-content" class="bg-[#1e293b]/30 rounded-[2rem] border border-slate-800 p-8"></div>
     </div>
 
-    <!-- Modals -->
-    <div id="chat-modal" class="hidden fixed inset-0 bg-black/80 z-[200] flex items-center justify-center p-6">
-        <div class="bg-[#1e293b] w-full max-w-lg rounded-3xl p-8 border border-slate-700 h-[600px] flex flex-col">
-            <div class="flex justify-between items-start mb-6">
+    <!-- Live Admin Chat Modal -->
+    <div id="chat-modal" class="hidden fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-6 backdrop-blur-md">
+        <div class="bg-[#1e293b] w-full max-w-lg rounded-[2.5rem] p-8 border border-slate-700 h-[650px] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
                 <div>
-                    <h3 id="chat-subject" class="font-black uppercase text-sm">Ticket Thread</h3>
+                    <h3 id="chat-subject" class="font-black uppercase text-sm">Customer Support</h3>
                     <p id="chat-ref" class="text-[9px] text-slate-500 font-bold uppercase"></p>
                 </div>
-                <button onclick="document.getElementById('chat-modal').classList.add('hidden')" class="text-slate-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="closeAdminChat()" class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div id="chat-body" class="flex-1 overflow-y-auto space-y-4 mb-6"></div>
-            <div class="flex gap-2">
-                <input type="text" id="admin-reply" class="flex-1 bg-slate-900 border-slate-700 rounded-xl px-4 text-sm" placeholder="Your reply...">
-                <button id="send-reply-btn" class="bg-[#D4AF37] text-navy-900 px-6 rounded-xl font-black uppercase text-[10px]">Send</button>
+            <div id="chat-body" class="flex-1 overflow-y-auto space-y-4 mb-6 pr-2"></div>
+            <div class="flex gap-2 bg-slate-900 p-2 rounded-2xl">
+                <input type="text" id="admin-reply" class="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4" placeholder="Reply to customer...">
+                <button id="send-reply-btn" class="bg-[#D4AF37] text-[#002147] px-6 py-3 rounded-xl font-black uppercase text-[10px]">Send</button>
             </div>
         </div>
     </div>
@@ -56,30 +58,40 @@
     <script type="module">
         import { auth, db, ADMIN_EMAIL } from './firebase-config.js';
         import { collection, query, onSnapshot, doc, updateDoc, runTransaction, serverTimestamp, getDocs, where, addDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-        import { formatCurrency, formatDate } from './utils.js';
+        import { formatCurrency } from './utils.js';
         import { showToast } from './toast.js';
 
         auth.onAuthStateChanged(user => {
             if (!user || user.email !== ADMIN_EMAIL) window.location.href = "login.html";
             document.getElementById('admin-email').innerText = user.email;
         });
-        document.getElementById('logout-btn').onclick = () => auth.signOut();
 
-        let currentTab = 'users';
-        const content = document.getElementById('tab-content');
+        let chatUnsubscribe = null;
+        let currentActiveChatId = null;
 
         const loadTab = (tab) => {
-            currentTab = tab;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-            
             onSnapshot(collection(db, tab), async (snap) => {
-                if (tab === 'users') {
+                if (tab === 'supportTickets') {
+                    document.getElementById('tab-content').innerHTML = `
+                        <table class="tb-table w-full">
+                            <thead><tr><th>Inquiry</th><th>UID</th><th>Status</th><th>Action</th></tr></thead>
+                            <tbody>${snap.docs.map(tDoc => {
+                                const t = tDoc.data();
+                                return `<tr>
+                                    <td><p class="font-bold">${t.subject}</p></td>
+                                    <td class="text-slate-500 font-mono">${t.uid.slice(0,8)}...</td>
+                                    <td><span class="text-[9px] font-black uppercase tracking-widest ${t.status === 'OPEN' ? 'text-emerald-400' : 'text-slate-500'}">${t.status}</span></td>
+                                    <td><button onclick="openAdminChat('${tDoc.id}')" class="bg-[#D4AF37]/10 text-[#D4AF37] px-4 py-2 rounded-lg font-black uppercase text-[9px]">Enter Chat</button></td>
+                                </tr>`;
+                            }).join('')}</tbody>
+                        </table>`;
+                } else if (tab === 'users') {
                     const accs = await getDocs(collection(db, "accounts"));
                     const accMap = {}; accs.forEach(a => accMap[a.data().ownerUid] = a.data());
-                    
-                    content.innerHTML = `
+                    document.getElementById('tab-content').innerHTML = `
                         <table class="tb-table w-full">
-                            <thead><tr><th>User</th><th>Account</th><th>Balance</th><th>KYC</th><th>Action</th></tr></thead>
+                            <thead><tr><th>User</th><th>Account</th><th>Balance</th><th>Action</th></tr></thead>
                             <tbody>${snap.docs.map(uDoc => {
                                 const u = uDoc.data();
                                 const a = accMap[u.uid] || {};
@@ -87,42 +99,23 @@
                                     <td>${u.fullName}<br><span class="text-[9px] text-slate-500 uppercase">${u.email}</span></td>
                                     <td class="font-mono text-slate-400">${a.accountNumber || 'N/A'}</td>
                                     <td class="text-[#D4AF37] font-black">${formatCurrency(a.availableBalance)}</td>
-                                    <td class="text-[9px] font-black uppercase">${u.kycStatus}</td>
-                                    <td><button onclick="manageUser('${u.uid}')" class="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-lg font-black uppercase text-[9px]">Manage</button></td>
-                                </tr>`;
-                            }).join('')}</tbody>
-                        </table>`;
-                } else if (tab === 'supportTickets') {
-                    content.innerHTML = `
-                        <table class="tb-table w-full">
-                            <thead><tr><th>Subject</th><th>UID</th><th>Status</th><th>Action</th></tr></thead>
-                            <tbody>${snap.docs.map(tDoc => {
-                                const t = tDoc.data();
-                                return `<tr>
-                                    <td>${t.subject}</td>
-                                    <td class="text-slate-500 font-mono">${t.uid.slice(0,8)}...</td>
-                                    <td><span class="text-[9px] font-black uppercase">${t.status}</span></td>
-                                    <td>
-                                        <button onclick="openAdminChat('${tDoc.id}')" class="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-lg font-black uppercase text-[9px]">Reply</button>
-                                        <button onclick="closeTicket('${tDoc.id}')" class="bg-rose-500/10 text-rose-500 px-3 py-1 rounded-lg font-black uppercase text-[9px] ml-2">Close</button>
-                                    </td>
+                                    <td><button onclick="manageUser('${u.uid}')" class="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-lg font-black uppercase text-[9px]">Adjust</button></td>
                                 </tr>`;
                             }).join('')}</tbody>
                         </table>`;
                 } else {
-                    content.innerHTML = `
+                    document.getElementById('tab-content').innerHTML = `
                         <table class="tb-table w-full">
-                            <thead><tr><th>ID</th><th>User UID</th><th>Value</th><th>Status</th><th>Action</th></tr></thead>
+                            <thead><tr><th>ID</th><th>Value</th><th>Status</th><th>Action</th></tr></thead>
                             <tbody>${snap.docs.map(dDoc => {
                                 const d = dDoc.data();
                                 return `<tr>
-                                    <td>${dDoc.id.slice(0,8)}</td>
-                                    <td class="text-slate-500 font-mono">${d.uid.slice(0,8)}...</td>
+                                    <td>${dDoc.id.slice(0,6)}</td>
                                     <td class="font-black">${d.amount ? formatCurrency(d.amount) : d.documentType}</td>
                                     <td><span class="text-[9px] font-black uppercase">${d.status}</span></td>
                                     <td>
                                         ${d.status === 'PENDING' ? `
-                                            <button onclick="approveRequest('${tab}', '${dDoc.id}')" class="text-emerald-400 mr-4 font-black uppercase text-[9px]">Approve</button>
+                                            <button onclick="approveRequest('${tab}', '${dDoc.id}')" class="text-emerald-400 mr-3 font-black uppercase text-[9px]">Approve</button>
                                             <button onclick="declinePrompt('${tab}', '${dDoc.id}')" class="text-rose-400 font-black uppercase text-[9px]">Decline</button>
                                         ` : '<span class="text-slate-600 font-bold uppercase text-[9px]">Processed</span>'}
                                     </td>
@@ -133,23 +126,28 @@
             });
         };
 
-        window.openAdminChat = async (id) => {
-            const snap = await getDocs(query(collection(db, "supportTickets"), where("__name__", "==", id)));
-            const ticket = snap.docs[0].data();
+        window.openAdminChat = (id) => {
+            currentActiveChatId = id;
             const modal = document.getElementById('chat-modal');
             const body = document.getElementById('chat-body');
-            
-            document.getElementById('chat-ref').innerText = `Ticket ID: ${id}`;
-            body.innerHTML = ticket.messages.map(m => `
-                <div class="flex ${m.sender === 'user' ? 'justify-start' : 'justify-end'}">
-                    <div class="max-w-[85%] p-3 rounded-xl ${m.sender === 'user' ? 'bg-slate-800 text-slate-200' : 'bg-blue-600 text-white'}">
-                        <p class="text-xs">${m.text}</p>
-                        <p class="text-[8px] mt-1 uppercase opacity-50">${m.sender}</p>
-                    </div>
-                </div>
-            `).join('');
-            
+            document.getElementById('chat-ref').innerText = `Thread: ${id}`;
             modal.classList.remove('hidden');
+
+            // Set up live listener for messages
+            chatUnsubscribe = onSnapshot(doc(db, "supportTickets", id), (snap) => {
+                const data = snap.data();
+                if (!data) return;
+                body.innerHTML = data.messages.map(m => `
+                    <div class="flex ${m.sender === 'user' ? 'justify-start' : 'justify-end'}">
+                        <div class="max-w-[85%] p-4 rounded-2xl ${m.sender === 'user' ? 'bg-slate-800 text-slate-200 rounded-tl-none' : 'bg-blue-600 text-white rounded-tr-none shadow-lg'}">
+                            <p class="text-xs font-bold">${m.text}</p>
+                            <p class="text-[8px] mt-2 uppercase opacity-50 font-black">${m.sender === 'user' ? 'Customer' : 'Bank Agent'}</p>
+                        </div>
+                    </div>
+                `).join('');
+                body.scrollTop = body.scrollHeight;
+            });
+
             document.getElementById('send-reply-btn').onclick = async () => {
                 const text = document.getElementById('admin-reply').value;
                 if (!text) return;
@@ -158,94 +156,51 @@
                     status: "PENDING"
                 });
                 document.getElementById('admin-reply').value = "";
-                openAdminChat(id); // refresh
             };
         };
 
-        window.closeTicket = async (id) => {
-            if (confirm("Close ticket?")) await updateDoc(doc(db, "supportTickets", id), { status: "CLOSED" });
+        window.closeAdminChat = () => {
+            if (chatUnsubscribe) chatUnsubscribe();
+            document.getElementById('chat-modal').classList.add('hidden');
         };
 
-        // Approval Logic (as previously implemented but shared for new tab logic)
+        // Approval / Logic Helpers
         window.approveRequest = async (type, id) => {
             try {
                 await runTransaction(db, async (transaction) => {
                     const reqRef = doc(db, type, id);
                     const reqSnap = await transaction.get(reqRef);
                     const req = reqSnap.data();
+                    const accQ = await getDocs(query(collection(db, "accounts"), where("ownerUid", "==", req.uid)));
+                    const accRef = doc(db, "accounts", accQ.docs[0].id);
+                    const acc = accQ.docs[0].data();
 
-                    if(type === 'kyc') {
-                        transaction.update(reqRef, { status: 'VERIFIED' });
-                        transaction.update(doc(db, "users", req.uid), { kycStatus: 'VERIFIED' });
-                    } else if(type === 'deposits') {
-                        const accQ = await getDocs(query(collection(db, "accounts"), where("ownerUid", "==", req.uid)));
-                        const accRef = doc(db, "accounts", accQ.docs[0].id);
-                        transaction.update(accRef, { 
-                            availableBalance: req.amount + accQ.docs[0].data().availableBalance,
-                            totalBalance: req.amount + accQ.docs[0].data().totalBalance 
-                        });
-                        transaction.update(reqRef, { status: 'APPROVED' });
-                        transaction.set(doc(collection(db, "transactions")), {
-                            uid: req.uid, amount: req.amount, type: 'DEPOSIT', direction: 'credit',
-                            description: 'Deposit Approved', timestamp: serverTimestamp()
-                        });
+                    if(type === 'deposits') {
+                        transaction.update(accRef, { availableBalance: acc.availableBalance + req.amount, totalBalance: acc.totalBalance + req.amount });
+                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'DEPOSIT', direction: 'credit', description: 'Bank Deposit', timestamp: serverTimestamp() });
                     } else if(type === 'withdrawals') {
-                        const accQ = await getDocs(query(collection(db, "accounts"), where("ownerUid", "==", req.uid)));
-                        const accRef = doc(db, "accounts", accQ.docs[0].id);
-                        transaction.update(accRef, { 
-                            availableBalance: accQ.docs[0].data().availableBalance - req.amount,
-                            totalBalance: accQ.docs[0].data().totalBalance - req.amount
-                        });
-                        transaction.update(reqRef, { status: 'APPROVED' });
-                        transaction.set(doc(collection(db, "transactions")), {
-                            uid: req.uid, amount: req.amount, type: 'WITHDRAWAL', direction: 'debit',
-                            description: 'Withdrawal Approved', timestamp: serverTimestamp()
-                        });
+                        transaction.update(accRef, { availableBalance: acc.availableBalance - req.amount, totalBalance: acc.totalBalance - req.amount });
+                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'WITHDRAW', direction: 'debit', description: 'Bank Withdrawal', timestamp: serverTimestamp() });
                     } else if(type === 'transfers') {
-                        const senderAccQ = await getDocs(query(collection(db, "accounts"), where("ownerUid", "==", req.uid)));
-                        const recipAccQ = await getDocs(query(collection(db, "accounts"), where("accountNumber", "==", req.recipientAcc)));
-
-                        transaction.update(doc(db, "accounts", senderAccQ.docs[0].id), { availableBalance: senderAccQ.docs[0].data().availableBalance - req.amount });
-                        transaction.update(doc(db, "accounts", recipAccQ.docs[0].id), { availableBalance: recipAccQ.docs[0].data().availableBalance + req.amount });
-                        transaction.update(reqRef, { status: 'APPROVED' });
-
-                        transaction.set(doc(collection(db, "transactions")), {
-                            uid: req.uid, amount: req.amount, type: 'TRANSFER', direction: 'debit',
-                            description: `To ${req.recipientAcc}`, timestamp: serverTimestamp()
-                        });
-                        transaction.set(doc(collection(db, "transactions")), {
-                            uid: recipAccQ.docs[0].data().ownerUid, amount: req.amount, type: 'TRANSFER', direction: 'credit',
-                            description: `From ${senderAccQ.docs[0].data().accountNumber}`, timestamp: serverTimestamp()
-                        });
+                        const recipQ = await getDocs(query(collection(db, "accounts"), where("accountNumber", "==", req.recipientAcc)));
+                        transaction.update(accRef, { availableBalance: acc.availableBalance - req.amount });
+                        transaction.update(doc(db, "accounts", recipQ.docs[0].id), { availableBalance: recipQ.docs[0].data().availableBalance + req.amount });
+                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'TRANSFER', direction: 'debit', description: `To ${req.recipientAcc}`, timestamp: serverTimestamp() });
+                        transaction.set(doc(collection(db, "transactions")), { uid: recipQ.docs[0].data().ownerUid, amount: req.amount, type: 'TRANSFER', direction: 'credit', description: `From ${acc.accountNumber}`, timestamp: serverTimestamp() });
+                    } else if(type === 'kyc') {
+                        transaction.update(doc(db, "users", req.uid), { kycStatus: 'VERIFIED' });
                     }
+                    transaction.update(reqRef, { status: 'APPROVED' });
                 });
-                showToast("Success");
-            } catch(e) { console.error(e); showToast(e.message, "error"); }
+                showToast("Request Approved");
+            } catch(e) { console.error(e); }
         };
 
         window.declinePrompt = async (type, id) => {
             const reason = prompt("Decline Reason:");
             if(!reason) return;
             await updateDoc(doc(db, type, id), { status: 'DECLINED', declineReason: reason });
-            if(type === 'kyc') {
-                const req = (await getDocs(query(collection(db, 'kyc'), where('__name__', '==', id)))).docs[0].data();
-                await updateDoc(doc(db, "users", req.uid), { kycStatus: 'REJECTED', kycDeclineReason: reason });
-            }
-            showToast("Declined");
-        };
-
-        window.manageUser = async (uid) => {
-            const amount = prompt("Adjustment Amount (e.g. 1000):");
-            const reason = prompt("Description:");
-            if(!amount || !reason) return;
-            const accQ = await getDocs(query(collection(db, "accounts"), where("ownerUid", "==", uid)));
-            const val = parseFloat(amount);
-            await updateDoc(doc(db, "accounts", accQ.docs[0].id), { availableBalance: accQ.docs[0].data().availableBalance + val });
-            await addDoc(collection(db, "transactions"), {
-                uid, amount: Math.abs(val), type: 'ADJUSTMENT', direction: val > 0 ? 'credit' : 'debit',
-                description: reason, timestamp: serverTimestamp()
-            });
-            showToast("Balance updated");
+            showToast("Request Declined");
         };
 
         document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => loadTab(b.dataset.tab));
