@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Chat Center | Trust Bank</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .active-chat { background: #334155; border-left: 4px solid #D4AF37; }
+        .msg-bubble { max-width: 70%; padding: 10px 14px; border-radius: 1rem; font-size: 13px; margin-bottom: 2px; }
+        .msg-admin { background: #D4AF37; color: #002147; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg-user { background: #1e293b; color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
+    </style>
+</head>
+<body class="bg-[#0f172a] text-slate-100 flex h-screen overflow-hidden">
+
+    <!-- Sidebar: User List -->
+    <aside class="w-80 border-r border-slate-800 flex flex-col bg-[#1e293b]">
+        <div class="p-6 border-b border-slate-800">
+            <h1 class="font-black text-[#D4AF37]">MESSAGES</h1>
+            <input type="text" id="user-search" placeholder="Search users..." class="w-full mt-4 bg-slate-900 border-none rounded-xl p-3 text-xs">
+        </div>
+        <div id="contact-list" class="flex-1 overflow-y-auto">
+            <!-- User items hydrate here -->
+        </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="flex-1 flex flex-col">
+        <div id="chat-header" class="p-6 border-b border-slate-800 flex items-center gap-4 bg-[#1e293b]/50">
+            <p class="text-slate-500 uppercase text-xs font-black tracking-widest">Select a conversation to begin</p>
+        </div>
+
+        <div id="admin-chat-flow" class="flex-1 overflow-y-auto p-8 flex flex-col gap-2">
+            <!-- Messages hydrate here -->
+        </div>
+
+        <div id="admin-input-area" class="hidden p-6 bg-[#1e293b] border-t border-slate-800">
+            <div class="flex gap-4 items-center">
+                <input type="text" id="admin-reply" placeholder="Type a reply..." class="flex-1 bg-slate-900 border-none rounded-xl p-4 text-sm">
+                <button id="admin-send" class="bg-[#D4AF37] text-[#002147] px-8 py-4 rounded-xl font-black uppercase text-xs">Send</button>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth, db, ADMIN_EMAIL } from './firebase-config.js';
+        import { collection, query, onSnapshot, doc, addDoc, updateDoc, serverTimestamp, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+        let activeUid = null;
+
+        auth.onAuthStateChanged(user => {
+            if (!user || user.email !== ADMIN_EMAIL) window.location.href = 'login.html';
+            loadContacts();
+        });
+
+        function loadContacts() {
+            onSnapshot(query(collection(db, "supportTickets"), orderBy("lastTimestamp", "desc")), snap => {
+                const list = document.getElementById('contact-list');
+                list.innerHTML = snap.docs.map(d => {
+                    const c = d.data();
+                    return `
+                        <div onclick="selectUser('${d.id}')" class="p-4 border-b border-slate-800 cursor-pointer hover:bg-slate-800 transition-colors ${activeUid === d.id ? 'active-chat' : ''}">
+                            <div class="flex justify-between items-start">
+                                <p class="text-xs font-black text-slate-100">UID: ${d.id.slice(0,8)}...</p>
+                                ${c.unreadAdminCount > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-2 rounded-full">${c.unreadAdminCount}</span>` : ''}
+                            </div>
+                            <p class="text-[10px] text-slate-500 truncate mt-1">${c.lastMessage || 'No messages'}</p>
+                        </div>
+                    `;
+                }).join('');
+            });
+        }
+
+        window.selectUser = (uid) => {
+            activeUid = uid;
+            document.getElementById('admin-input-area').classList.remove('hidden');
+            document.getElementById('chat-header').innerHTML = `<h2 class="font-black text-[#D4AF37]">CHAT WITH USER ${uid}</h2>`;
+            
+            // Listen for messages
+            onSnapshot(query(collection(db, "supportTickets", uid, "messages"), orderBy("timestamp", "asc")), snap => {
+                const flow = document.getElementById('admin-chat-flow');
+                flow.innerHTML = snap.docs.map(d => {
+                    const m = d.data();
+                    const isAdmin = m.senderRole === 'admin';
+                    return `
+                        <div class="flex flex-col ${isAdmin ? 'items-end' : 'items-start'}">
+                            <div class="msg-bubble ${isAdmin ? 'msg-admin' : 'msg-user'}">
+                                ${m.imageUrl ? `<img src="${m.imageUrl}" class="rounded-lg mb-2 max-w-xs">` : ''}
+                                ${m.text || ''}
+                            </div>
+                        </div>`;
+                }).join('');
+                flow.scrollTop = flow.scrollHeight;
+                updateDoc(doc(db, "supportTickets", uid), { unreadAdminCount: 0 });
+            });
+        };
+
+        document.getElementById('admin-send').onclick = async () => {
+            const input = document.getElementById('admin-reply');
+            if (!input.value || !activeUid) return;
+            
+            const text = input.value;
+            input.value = '';
+
+            await addDoc(collection(db, "supportTickets", activeUid, "messages"), {
+                text,
+                senderRole: 'admin',
+                timestamp: serverTimestamp()
+            });
+
+            await updateDoc(doc(db, "supportTickets", activeUid), {
+                lastMessage: text,
+                lastTimestamp: serverTimestamp(),
+                unreadUserCount: (await (await getDoc(doc(db, "supportTickets", activeUid))).data()?.unreadUserCount || 0) + 1
+            });
+        };
+    </script>
+</body>
+</html>
