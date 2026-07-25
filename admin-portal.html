@@ -17,7 +17,7 @@
 </head>
 <body class="bg-[#0f172a] text-slate-100 min-h-screen">
     <nav class="bg-[#1e293b] p-6 flex justify-between items-center border-b border-slate-800">
-        <h1 class="font-black uppercase tracking-widest text-sm text-[#D4AF37]">Admin Console</h1>
+        <h1 class="font-black uppercase tracking-widest text-sm text-[#D4AF37]">Central Control</h1>
         <div class="flex items-center gap-6">
             <span id="admin-email" class="text-[10px] font-bold text-slate-400 uppercase">---</span>
             <button id="logout-btn" class="bg-rose-500/10 text-rose-500 px-4 py-1.5 rounded-full text-[10px] font-black uppercase">Exit</button>
@@ -37,7 +37,7 @@
         <div id="tab-content" class="bg-[#1e293b]/30 rounded-[2rem] border border-slate-800 p-8"></div>
     </div>
 
-    <!-- Live Admin Chat Modal -->
+    <!-- Chat Modal -->
     <div id="chat-modal" class="hidden fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-6 backdrop-blur-md">
         <div class="bg-[#1e293b] w-full max-w-lg rounded-[2.5rem] p-8 border border-slate-700 h-[650px] flex flex-col shadow-2xl">
             <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
@@ -57,7 +57,7 @@
 
     <script type="module">
         import { auth, db, ADMIN_EMAIL } from './firebase-config.js';
-        import { collection, query, onSnapshot, doc, updateDoc, runTransaction, serverTimestamp, getDocs, where, addDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { collection, query, onSnapshot, doc, updateDoc, runTransaction, serverTimestamp, getDocs, where, addDoc, arrayUnion, increment } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { formatCurrency } from './utils.js';
         import { showToast } from './toast.js';
 
@@ -67,58 +67,44 @@
         });
 
         let chatUnsubscribe = null;
-        let currentActiveChatId = null;
 
         const loadTab = (tab) => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
             onSnapshot(collection(db, tab), async (snap) => {
-                if (tab === 'supportTickets') {
-                    document.getElementById('tab-content').innerHTML = `
-                        <table class="tb-table w-full">
-                            <thead><tr><th>Inquiry</th><th>UID</th><th>Status</th><th>Action</th></tr></thead>
-                            <tbody>${snap.docs.map(tDoc => {
-                                const t = tDoc.data();
-                                return `<tr>
-                                    <td><p class="font-bold">${t.subject}</p></td>
-                                    <td class="text-slate-500 font-mono">${t.uid.slice(0,8)}...</td>
-                                    <td><span class="text-[9px] font-black uppercase tracking-widest ${t.status === 'OPEN' ? 'text-emerald-400' : 'text-slate-500'}">${t.status}</span></td>
-                                    <td><button onclick="openAdminChat('${tDoc.id}')" class="bg-[#D4AF37]/10 text-[#D4AF37] px-4 py-2 rounded-lg font-black uppercase text-[9px]">Enter Chat</button></td>
-                                </tr>`;
-                            }).join('')}</tbody>
-                        </table>`;
-                } else if (tab === 'users') {
+                const content = document.getElementById('tab-content');
+                if (tab === 'users') {
                     const accs = await getDocs(collection(db, "accounts"));
                     const accMap = {}; accs.forEach(a => accMap[a.data().ownerUid] = a.data());
-                    document.getElementById('tab-content').innerHTML = `
+                    content.innerHTML = `
                         <table class="tb-table w-full">
-                            <thead><tr><th>User</th><th>Account</th><th>Balance</th><th>Action</th></tr></thead>
+                            <thead><tr><th>User</th><th>Account ID</th><th>Available Balance</th><th>Action</th></tr></thead>
                             <tbody>${snap.docs.map(uDoc => {
                                 const u = uDoc.data();
                                 const a = accMap[u.uid] || {};
                                 return `<tr>
-                                    <td>${u.fullName}<br><span class="text-[9px] text-slate-500 uppercase">${u.email}</span></td>
-                                    <td class="font-mono text-slate-400">${a.accountNumber || 'N/A'}</td>
+                                    <td>${u.fullName}<br><span class="text-[9px] text-slate-500 uppercase font-bold">${u.email}</span></td>
+                                    <td class="font-mono text-slate-400">${a.accountNumber || 'NO ACCOUNT'}</td>
                                     <td class="text-[#D4AF37] font-black">${formatCurrency(a.availableBalance)}</td>
-                                    <td><button onclick="manageUser('${u.uid}')" class="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-lg font-black uppercase text-[9px]">Adjust</button></td>
+                                    <td>
+                                        <button onclick="manageUser('${u.uid}', '${u.fullName}')" class="bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-lg font-black uppercase text-[9px]">Add/Remove Money</button>
+                                    </td>
                                 </tr>`;
                             }).join('')}</tbody>
                         </table>`;
+                } else if (tab === 'supportTickets') {
+                    content.innerHTML = `<table class="tb-table w-full"><thead><tr><th>Subject</th><th>Status</th><th>Action</th></tr></thead>
+                            <tbody>${snap.docs.map(tDoc => {
+                                const t = tDoc.data();
+                                return `<tr><td>${t.subject}</td><td>${t.status}</td><td><button onclick="openAdminChat('${tDoc.id}')" class="text-blue-400 font-black uppercase text-[9px]">Chat</button></td></tr>`;
+                            }).join('')}</tbody></table>`;
                 } else {
-                    document.getElementById('tab-content').innerHTML = `
+                    content.innerHTML = `
                         <table class="tb-table w-full">
-                            <thead><tr><th>ID</th><th>Value</th><th>Status</th><th>Action</th></tr></thead>
+                            <thead><tr><th>ID</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
                             <tbody>${snap.docs.map(dDoc => {
                                 const d = dDoc.data();
-                                return `<tr>
-                                    <td>${dDoc.id.slice(0,6)}</td>
-                                    <td class="font-black">${d.amount ? formatCurrency(d.amount) : d.documentType}</td>
-                                    <td><span class="text-[9px] font-black uppercase">${d.status}</span></td>
-                                    <td>
-                                        ${d.status === 'PENDING' ? `
-                                            <button onclick="approveRequest('${tab}', '${dDoc.id}')" class="text-emerald-400 mr-3 font-black uppercase text-[9px]">Approve</button>
-                                            <button onclick="declinePrompt('${tab}', '${dDoc.id}')" class="text-rose-400 font-black uppercase text-[9px]">Decline</button>
-                                        ` : '<span class="text-slate-600 font-bold uppercase text-[9px]">Processed</span>'}
-                                    </td>
+                                return `<tr><td>${dDoc.id.slice(0,6)}</td><td class="font-black">${formatCurrency(d.amount)}</td><td>${d.status}</td>
+                                    <td>${d.status === 'PENDING' ? `<button onclick="approveRequest('${tab}', '${dDoc.id}')" class="text-emerald-400 mr-3">Approve</button><button onclick="declinePrompt('${tab}', '${dDoc.id}')" class="text-rose-400">Decline</button>` : 'Processed'}</td>
                                 </tr>`;
                             }).join('')}</tbody>
                         </table>`;
@@ -126,28 +112,70 @@
             });
         };
 
+        // --- NEW: ADD/REMOVE MONEY LOGIC ---
+        window.manageUser = async (uid, name) => {
+            const amountStr = prompt(`Adjust Balance for ${name}\n\nEnter amount (use '-' to remove, e.g. -500):`);
+            if (!amountStr || isNaN(amountStr)) return;
+
+            const reason = prompt("Enter reason for this adjustment (User will see this):", "Admin Adjustment");
+            if (!reason) return;
+
+            const amount = parseFloat(amountStr);
+
+            try {
+                // 1. Find the account
+                const accQ = query(collection(db, "accounts"), where("ownerUid", "==", uid));
+                const accSnap = await getDocs(accQ);
+
+                if (accSnap.empty) {
+                    alert("No bank account found for this user.");
+                    return;
+                }
+
+                const accDocId = accSnap.docs[0].id;
+                const accRef = doc(db, "accounts", accDocId);
+
+                // 2. Perform atomic update
+                await updateDoc(accRef, {
+                    availableBalance: increment(amount),
+                    totalBalance: increment(amount)
+                });
+
+                // 3. Create a transaction record for the user's history
+                await addDoc(collection(db, "transactions"), {
+                    uid: uid,
+                    amount: Math.abs(amount),
+                    type: "ADMIN_ADJUSTMENT",
+                    direction: amount > 0 ? "credit" : "debit",
+                    description: reason,
+                    status: "SUCCESSFUL",
+                    timestamp: serverTimestamp()
+                });
+
+                showToast(`Success: ${amount > 0 ? 'Added' : 'Removed'} ${formatCurrency(Math.abs(amount))}`);
+            } catch (err) {
+                console.error(err);
+                showToast("Error updating balance", "error");
+            }
+        };
+
         window.openAdminChat = (id) => {
-            currentActiveChatId = id;
             const modal = document.getElementById('chat-modal');
             const body = document.getElementById('chat-body');
             document.getElementById('chat-ref').innerText = `Thread: ${id}`;
             modal.classList.remove('hidden');
-
-            // Set up live listener for messages
             chatUnsubscribe = onSnapshot(doc(db, "supportTickets", id), (snap) => {
                 const data = snap.data();
                 if (!data) return;
                 body.innerHTML = data.messages.map(m => `
                     <div class="flex ${m.sender === 'user' ? 'justify-start' : 'justify-end'}">
-                        <div class="max-w-[85%] p-4 rounded-2xl ${m.sender === 'user' ? 'bg-slate-800 text-slate-200 rounded-tl-none' : 'bg-blue-600 text-white rounded-tr-none shadow-lg'}">
+                        <div class="max-w-[85%] p-4 rounded-2xl ${m.sender === 'user' ? 'bg-slate-800 text-slate-200' : 'bg-blue-600 text-white'}">
                             <p class="text-xs font-bold">${m.text}</p>
-                            <p class="text-[8px] mt-2 uppercase opacity-50 font-black">${m.sender === 'user' ? 'Customer' : 'Bank Agent'}</p>
+                            <p class="text-[8px] mt-2 uppercase opacity-50 font-black">${m.sender}</p>
                         </div>
-                    </div>
-                `).join('');
+                    </div>`).join('');
                 body.scrollTop = body.scrollHeight;
             });
-
             document.getElementById('send-reply-btn').onclick = async () => {
                 const text = document.getElementById('admin-reply').value;
                 if (!text) return;
@@ -159,12 +187,9 @@
             };
         };
 
-        window.closeAdminChat = () => {
-            if (chatUnsubscribe) chatUnsubscribe();
-            document.getElementById('chat-modal').classList.add('hidden');
-        };
+        window.closeAdminChat = () => { if (chatUnsubscribe) chatUnsubscribe(); document.getElementById('chat-modal').classList.add('hidden'); };
 
-        // Approval / Logic Helpers
+        // Standard Approvals
         window.approveRequest = async (type, id) => {
             try {
                 await runTransaction(db, async (transaction) => {
@@ -177,16 +202,16 @@
 
                     if(type === 'deposits') {
                         transaction.update(accRef, { availableBalance: acc.availableBalance + req.amount, totalBalance: acc.totalBalance + req.amount });
-                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'DEPOSIT', direction: 'credit', description: 'Bank Deposit', timestamp: serverTimestamp() });
+                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'DEPOSIT', direction: 'credit', description: 'Bank Deposit Approved', status: "SUCCESSFUL", timestamp: serverTimestamp() });
                     } else if(type === 'withdrawals') {
                         transaction.update(accRef, { availableBalance: acc.availableBalance - req.amount, totalBalance: acc.totalBalance - req.amount });
-                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'WITHDRAW', direction: 'debit', description: 'Bank Withdrawal', timestamp: serverTimestamp() });
+                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'WITHDRAW', direction: 'debit', description: 'Bank Withdrawal Approved', status: "SUCCESSFUL", timestamp: serverTimestamp() });
                     } else if(type === 'transfers') {
                         const recipQ = await getDocs(query(collection(db, "accounts"), where("accountNumber", "==", req.recipientAcc)));
                         transaction.update(accRef, { availableBalance: acc.availableBalance - req.amount });
                         transaction.update(doc(db, "accounts", recipQ.docs[0].id), { availableBalance: recipQ.docs[0].data().availableBalance + req.amount });
-                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'TRANSFER', direction: 'debit', description: `To ${req.recipientAcc}`, timestamp: serverTimestamp() });
-                        transaction.set(doc(collection(db, "transactions")), { uid: recipQ.docs[0].data().ownerUid, amount: req.amount, type: 'TRANSFER', direction: 'credit', description: `From ${acc.accountNumber}`, timestamp: serverTimestamp() });
+                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'TRANSFER', direction: 'debit', description: `To ${req.recipientAcc}`, status: "SUCCESSFUL", timestamp: serverTimestamp() });
+                        transaction.set(doc(collection(db, "transactions")), { uid: recipQ.docs[0].data().ownerUid, amount: req.amount, type: 'TRANSFER', direction: 'credit', description: `From Admin/Correction`, status: "SUCCESSFUL", timestamp: serverTimestamp() });
                     } else if(type === 'kyc') {
                         transaction.update(doc(db, "users", req.uid), { kycStatus: 'VERIFIED' });
                     }
