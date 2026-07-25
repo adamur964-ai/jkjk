@@ -49,20 +49,28 @@
         <!-- Quick Actions -->
         <div class="grid grid-cols-4 gap-4">
             <a href="deposit.html" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100"><i class="fa-solid fa-arrow-down-to-bracket text-xl"></i></div>
-                <span class="text-[10px] font-black uppercase text-slate-500">Deposit</span>
+                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100 hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-arrow-down-to-bracket text-xl"></i>
+                </div>
+                <span class="text-[10px] font-black uppercase tracking-tighter text-slate-500">Deposit</span>
             </a>
             <a href="withdraw.html" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100"><i class="fa-solid fa-money-bill-transfer text-xl"></i></div>
-                <span class="text-[10px] font-black uppercase text-slate-500">Withdraw</span>
+                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100 hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-money-bill-transfer text-xl"></i>
+                </div>
+                <span class="text-[10px] font-black uppercase tracking-tighter text-slate-500">Withdraw</span>
             </a>
             <a href="transfer.html" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100"><i class="fa-solid fa-paper-plane text-xl"></i></div>
-                <span class="text-[10px] font-black uppercase text-slate-500">Transfer</span>
+                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100 hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-paper-plane text-xl"></i>
+                </div>
+                <span class="text-[10px] font-black uppercase tracking-tighter text-slate-500">Transfer</span>
             </a>
             <a href="kyc.html" class="flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100"><i class="fa-solid fa-user-shield text-xl"></i></div>
-                <span class="text-[10px] font-black uppercase text-slate-500">KYC</span>
+                <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100 hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-user-shield text-xl"></i>
+                </div>
+                <span class="text-[10px] font-black uppercase tracking-tighter text-slate-500">KYC</span>
             </a>
         </div>
 
@@ -70,9 +78,11 @@
         <section>
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xs font-black uppercase tracking-[0.2em] text-[#002147]">Recent Activity</h3>
-                <a href="transactions.html" class="text-[10px] font-black uppercase text-[#D4AF37]">View All</a>
+                <a href="transactions.html" class="text-[10px] font-black uppercase tracking-widest text-[#D4AF37]">View All</a>
             </div>
-            <div id="recent-transactions" class="space-y-4"></div>
+            <div id="recent-transactions" class="space-y-4">
+                <!-- Data Hydrates Here -->
+            </div>
         </section>
     </main>
 
@@ -80,17 +90,19 @@
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
         import { collection, query, where, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { renderHeader, renderBottomNav, renderEmptyState } from './components.js';
         import { formatCurrency, formatDate, copyToClipboard } from './utils.js';
         import { showToast } from './toast.js';
 
-        auth.onAuthStateChanged(user => {
+        onAuthStateChanged(auth, (user) => {
             if (!user) { window.location.href = "login.html"; return; }
 
             document.getElementById('header-container').innerHTML = renderHeader(`Welcome, ${user.displayName?.split(' ')[0] || 'User'}`);
             document.getElementById('nav-container').innerHTML = renderBottomNav('dashboard');
 
+            // 1. Account Info
             onSnapshot(query(collection(db, "accounts"), where("ownerUid", "==", user.uid)), (snap) => {
                 if (!snap.empty) {
                     const acc = snap.docs[0].data();
@@ -106,30 +118,68 @@
                 }
             });
 
-            onSnapshot(query(collection(db, "transactions"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(5)), (snap) => {
+            // 2. Merged Activity (Transactions + Pending)
+            const collections = ["transactions", "deposits", "withdrawals", "transfers"];
+            let combinedData = [];
+            
+            collections.forEach(coll => {
+                onSnapshot(query(collection(db, coll), where("uid", "==", user.uid)), (snap) => {
+                    // Update global cache for this collection
+                    combinedData = combinedData.filter(item => item._coll !== coll);
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        combinedData.push({ 
+                            ...d, 
+                            id: doc.id, 
+                            _coll: coll,
+                            sortDate: d.timestamp || d.createdAt 
+                        });
+                    });
+
+                    // Sort and Render
+                    renderMerged();
+                });
+            });
+
+            const renderMerged = () => {
                 const container = document.getElementById('recent-transactions');
-                if (snap.empty) { container.innerHTML = renderEmptyState("No transactions yet."); return; }
-                container.innerHTML = snap.docs.map(doc => {
-                    const t = doc.data();
-                    const isCredit = t.direction === 'credit';
+                const sorted = combinedData
+                    .sort((a, b) => (b.sortDate?.seconds || 0) - (a.sortDate?.seconds || 0))
+                    .slice(0, 5);
+
+                if (sorted.length === 0) {
+                    container.innerHTML = renderEmptyState("No activity yet.");
+                    return;
+                }
+
+                container.innerHTML = sorted.map(t => {
+                    const isPending = t.status === "PENDING";
+                    const isCredit = t.direction === 'credit' || t._coll === 'deposits';
+                    const icon = isCredit ? 'fa-arrow-down-left' : 'fa-arrow-up-right';
+                    const color = isCredit ? 'emerald' : 'rose';
+                    const typeLabel = t.type || t._coll.slice(0, -1).toUpperCase();
+
                     return `
-                        <div class="flex items-center justify-between p-4 bg-white rounded-3xl border border-slate-100">
+                        <div class="flex items-center justify-between p-4 bg-white rounded-3xl border border-slate-100 shadow-sm">
                             <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 ${isCredit ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} rounded-2xl flex items-center justify-center">
-                                    <i class="fa-solid ${isCredit ? 'fa-arrow-down-left' : 'fa-arrow-up-right'}"></i>
+                                <div class="w-12 h-12 bg-${color}-50 text-${color}-600 rounded-2xl flex items-center justify-center">
+                                    <i class="fa-solid ${icon}"></i>
                                 </div>
                                 <div>
-                                    <p class="text-sm font-black text-[#002147]">${t.description || t.type}</p>
-                                    <p class="text-[10px] font-bold text-slate-400">${formatDate(t.timestamp)}</p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-sm font-black text-[#002147]">${t.description || typeLabel}</p>
+                                        ${isPending ? `<span class="text-[8px] font-black bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full uppercase">Pending</span>` : ''}
+                                    </div>
+                                    <p class="text-[10px] font-bold text-slate-400">${formatDate(t.sortDate)}</p>
                                 </div>
                             </div>
-                            <p class="text-sm font-black ${isCredit ? 'text-emerald-600' : 'text-rose-600'}">
-                                ${isCredit ? '+' : '-'}${formatCurrency(t.amount, t.currency)}
+                            <p class="text-sm font-black text-${color}-600">
+                                ${isCredit ? '+' : '-'}${formatCurrency(t.amount)}
                             </p>
                         </div>
                     `;
                 }).join('');
-            });
+            };
         });
     </script>
 </body>
