@@ -1,91 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KYC | Trust Bank</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body class="bg-slate-50 pb-32">
-    <div id="header-container"></div>
-    <main class="max-w-md mx-auto px-6 pt-8">
-        <div id="status-banner-container"></div>
+<!-- Inside kyc-form in kyc.html -->
+<div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 space-y-6">
+    <div>
+        <label>Document Type</label>
+        <select id="doc-type" class="w-full"><option>Passport</option><option>ID Card</option></select>
+    </div>
+    <div>
+        <label>Front Image</label>
+        <input type="file" id="kyc-front" class="w-full" accept="image/*" required>
+    </div>
+    <div>
+        <label>Back Image</label>
+        <input type="file" id="kyc-back" class="w-full" accept="image/*" required>
+    </div>
+    <div>
+        <label>Selfie Image</label>
+        <input type="file" id="kyc-selfie" class="w-full" accept="image/*" required>
+    </div>
+</div>
+<button type="submit" id="submit-btn" class="w-full btn-primary h-16 mt-6">Submit for Verification</button>
 
-        <form id="kyc-form" class="space-y-6">
-            <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200">
-                <div class="mb-8">
-                    <label>Document Type</label>
-                    <select id="doc-type" class="w-full">
-                        <option>Passport</option>
-                        <option>Driver's License</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Upload Document Front</label>
-                    <input type="file" id="kyc-file" class="w-full" accept="image/*" required>
-                </div>
-            </div>
-            <button type="submit" id="submit-btn" class="w-full btn-primary h-16">Submit Identity</button>
-        </form>
+<script type="module">
+    // Inside form.onsubmit logic:
+    const front = await compressImage(document.getElementById('kyc-front').files[0]);
+    const back = await compressImage(document.getElementById('kyc-back').files[0]);
+    const selfie = await compressImage(document.getElementById('kyc-selfie').files[0]);
 
-        <div id="success-view" class="hidden"></div>
-    </main>
-    <div id="nav-container"></div>
-
-    <script type="module">
-        import { auth, db } from './firebase-config.js';
-        import { doc, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-        import { renderHeader, renderBottomNav, renderDeclinedBanner, renderApprovedSuccess } from './components.js';
-        import { compressImage } from './utils.js';
-        import { withPin } from './pin-guard.js';
-
-        document.getElementById('header-container').innerHTML = renderHeader('Identity Verification', true);
-        document.getElementById('nav-container').innerHTML = renderBottomNav('settings');
-
-        const form = document.getElementById('kyc-form');
-        const bannerCont = document.getElementById('status-banner-container');
-        const successCont = document.getElementById('success-view');
-
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                onSnapshot(doc(db, "users", user.uid), (snap) => {
-                    const d = snap.data();
-                    bannerCont.innerHTML = "";
-                    form.classList.remove('hidden');
-                    successCont.classList.add('hidden');
-
-                    if (d.kycStatus === "PENDING") {
-                        form.querySelectorAll('select, input, button').forEach(el => el.disabled = true);
-                        document.getElementById('submit-btn').innerText = "Awaiting Verification...";
-                    } else if (d.kycStatus === "REJECTED") {
-                        bannerCont.innerHTML = renderDeclinedBanner(d.kycDeclineReason);
-                        form.querySelectorAll('select, input, button').forEach(el => el.disabled = false);
-                    } else if (d.kycStatus === "VERIFIED") {
-                        form.classList.add('hidden');
-                        successCont.classList.remove('hidden');
-                        successCont.innerHTML = renderApprovedSuccess("Identity Verified Successfully.", () => location.reload());
-                    }
-                });
-            }
-        });
-
-        form.onsubmit = (e) => {
-            e.preventDefault();
-            withPin(async () => {
-                const btn = document.getElementById('submit-btn');
-                btn.disabled = true;
-                const base64 = await compressImage(document.getElementById('kyc-file').files[0]);
-                await setDoc(doc(db, "kyc", auth.currentUser.uid), {
-                    uid: auth.currentUser.uid,
-                    documentType: document.getElementById('doc-type').value,
-                    documentImage: base64,
-                    status: "PENDING",
-                    submittedAt: serverTimestamp()
-                });
-                await setDoc(doc(db, "users", auth.currentUser.uid), { kycStatus: "PENDING" }, { merge: true });
-            });
-        };
-    </script>
-</body>
-</html>
+    await setDoc(doc(db, "kyc", auth.currentUser.uid), {
+        uid: auth.currentUser.uid,
+        documentType: document.getElementById('doc-type').value,
+        documentFront: front,
+        documentBack: back,
+        documentSelfie: selfie,
+        status: "PENDING",
+        submittedAt: serverTimestamp()
+    });
+</script>
