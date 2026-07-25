@@ -3,65 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Support | Trust Bank</title>
+    <title>Live Chat | Support</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        #messages-container::-webkit-scrollbar { width: 4px; }
+        #messages-container::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
 </head>
-<body class="bg-slate-50 pb-32">
+<body class="bg-slate-50 pb-20">
     <div id="header-container"></div>
     
-    <main class="max-w-md mx-auto px-6 pt-8">
-        <!-- Ticket List View -->
+    <main class="max-w-md mx-auto px-6 pt-6">
+        <!-- Ticket List -->
         <div id="list-view" class="space-y-6">
-            <button id="new-ticket-btn" class="w-full bg-[#002147] text-white p-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest">
-                <i class="fa-solid fa-plus mr-2"></i> Open New Ticket
-            </button>
-            <div id="ticket-list" class="space-y-4"></div>
-        </div>
-
-        <!-- Chat View (Hidden by default) -->
-        <div id="chat-view" class="hidden flex flex-col h-[70vh]">
-            <button id="back-btn" class="mb-4 text-slate-400 text-xs font-black uppercase tracking-widest">
-                <i class="fa-solid fa-arrow-left mr-1"></i> Back to Tickets
-            </button>
-            
-            <div id="messages-container" class="flex-1 overflow-y-auto space-y-4 p-2">
-                <!-- Messages populate here -->
-            </div>
-
-            <div class="mt-4 flex gap-2">
-                <input type="text" id="chat-input" placeholder="Type a message..." class="flex-1 bg-white">
-                <button id="send-msg-btn" class="w-12 h-12 bg-[#002147] text-[#D4AF37] rounded-xl">
-                    <i class="fa-solid fa-paper-plane"></i>
+            <div class="bg-white p-6 rounded-3xl border border-slate-200">
+                <h2 class="text-lg font-black text-[#002147] mb-2">Live Support</h2>
+                <p class="text-xs font-bold text-slate-400 mb-6">Chat directly with a bank representative.</p>
+                <button id="new-ticket-btn" class="w-full btn-primary h-14 uppercase text-[10px] tracking-widest">
+                    <i class="fa-solid fa-comment-dots mr-2"></i> Start New Chat
                 </button>
             </div>
+            <div id="ticket-list" class="space-y-3"></div>
         </div>
 
-        <!-- New Ticket Modal (Hidden) -->
-        <div id="new-ticket-modal" class="hidden fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-6">
-            <div class="bg-white rounded-[2rem] p-8 w-full max-w-sm space-y-6">
-                <h3 class="font-black text-[#002147] uppercase text-xs tracking-widest">New Support Ticket</h3>
-                <input type="text" id="subject" placeholder="Subject (e.g., Transfer issue)" class="w-full bg-slate-50">
-                <textarea id="first-msg" placeholder="Initial message..." class="w-full h-32 bg-slate-50"></textarea>
-                <div class="flex gap-2">
-                    <button id="close-modal" class="flex-1 p-4 font-bold text-slate-400">Cancel</button>
-                    <button id="submit-ticket" class="flex-1 btn-primary p-4">Create</button>
+        <!-- Live Chat View -->
+        <div id="chat-view" class="hidden flex flex-col h-[75vh]">
+            <div class="flex items-center justify-between mb-4">
+                <button id="back-btn" class="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="text-center">
+                    <p id="chat-subject" class="text-xs font-black text-[#002147] uppercase truncate max-w-[150px]">Chat</p>
+                    <div class="flex items-center justify-center gap-1">
+                        <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span class="text-[8px] font-black text-emerald-500 uppercase">Bank Representative Online</span>
+                    </div>
                 </div>
+                <div class="w-10"></div>
+            </div>
+            
+            <div id="messages-container" class="flex-1 overflow-y-auto space-y-4 px-1 py-4"></div>
+
+            <div class="bg-white p-3 rounded-2xl border border-slate-200 flex gap-2 shadow-lg">
+                <input type="text" id="chat-input" placeholder="Type your message..." class="flex-1 border-none focus:ring-0 bg-transparent text-sm font-bold">
+                <button id="send-msg-btn" class="w-12 h-12 bg-[#002147] text-[#D4AF37] rounded-xl active:scale-90 transition-transform">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
             </div>
         </div>
     </main>
 
     <div id="nav-container"></div>
 
+    <!-- New Chat Modal -->
+    <div id="new-ticket-modal" class="hidden fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm space-y-6">
+            <h3 class="font-black text-[#002147] uppercase text-xs tracking-widest text-center">New Inquiry</h3>
+            <input type="text" id="subject" placeholder="What can we help you with?" class="w-full bg-slate-50 border-slate-100 rounded-xl px-4">
+            <textarea id="first-msg" placeholder="Tell us more details..." class="w-full h-32 bg-slate-50 border-slate-100 rounded-xl p-4 text-sm"></textarea>
+            <div class="flex gap-2">
+                <button id="close-modal" class="flex-1 p-4 font-bold text-slate-400 text-xs uppercase">Cancel</button>
+                <button id="submit-ticket" class="flex-1 btn-primary p-4 rounded-2xl uppercase text-[10px] tracking-widest">Start Chat</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { auth, db } from './firebase-config.js';
         import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { renderHeader, renderBottomNav, renderStatusBadge, renderEmptyState } from './components.js';
-        import { formatDate } from './utils.js';
-        import { showToast } from './toast.js';
 
-        document.getElementById('header-container').innerHTML = renderHeader('Support', true);
+        document.getElementById('header-container').innerHTML = renderHeader('Support', false);
         document.getElementById('nav-container').innerHTML = renderBottomNav('settings');
 
         let activeTicketId = null;
@@ -73,15 +85,18 @@
             
             onSnapshot(q, snap => {
                 const listCont = document.getElementById('ticket-list');
-                if (snap.empty) { listCont.innerHTML = renderEmptyState("No support history."); return; }
+                if (snap.empty) { listCont.innerHTML = renderEmptyState("No active chats."); return; }
                 
                 listCont.innerHTML = snap.docs.map(dDoc => {
                     const t = dDoc.data();
                     return `
-                        <div onclick="openTicket('${dDoc.id}')" class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center cursor-pointer shadow-sm active:scale-95 transition-transform">
-                            <div>
-                                <p class="font-black text-[#002147] text-sm">${t.subject}</p>
-                                <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Ref: ${dDoc.id.slice(0,6)}</p>
+                        <div onclick="openTicket('${dDoc.id}')" class="bg-white p-5 rounded-2xl border border-slate-100 flex justify-between items-center cursor-pointer shadow-sm active:bg-slate-50">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-[#002147]"><i class="fa-solid fa-headset"></i></div>
+                                <div>
+                                    <p class="font-black text-[#002147] text-sm truncate w-32">${t.subject}</p>
+                                    <p class="text-[8px] font-bold text-slate-400 uppercase">Live Thread</p>
+                                </div>
                             </div>
                             ${renderStatusBadge(t.status)}
                         </div>
@@ -94,13 +109,12 @@
                 }
             });
 
-            // Ticket creation
             document.getElementById('submit-ticket').onclick = async () => {
                 const subj = document.getElementById('subject').value;
                 const msg = document.getElementById('first-msg').value;
                 if (!subj || !msg) return;
 
-                await addDoc(collection(db, "supportTickets"), {
+                const docRef = await addDoc(collection(db, "supportTickets"), {
                     uid: user.uid,
                     subject: subj,
                     status: "OPEN",
@@ -108,10 +122,9 @@
                     messages: [{ sender: "user", text: msg, timestamp: new Date().toISOString() }]
                 });
                 document.getElementById('new-ticket-modal').classList.add('hidden');
-                showToast("Ticket opened!");
+                openTicket(docRef.id);
             };
 
-            // Send message
             document.getElementById('send-msg-btn').onclick = async () => {
                 const text = document.getElementById('chat-input').value;
                 if (!text || !activeTicketId) return;
@@ -128,21 +141,25 @@
             activeTicketId = id;
             document.getElementById('list-view').classList.add('hidden');
             document.getElementById('chat-view').classList.remove('hidden');
+            document.getElementById('header-container').classList.add('hidden');
+            document.getElementById('nav-container').classList.add('hidden');
         };
 
         document.getElementById('back-btn').onclick = () => {
             activeTicketId = null;
             document.getElementById('list-view').classList.remove('hidden');
             document.getElementById('chat-view').classList.add('hidden');
+            document.getElementById('header-container').classList.remove('hidden');
+            document.getElementById('nav-container').classList.remove('hidden');
         };
 
         const renderMessages = (messages) => {
             const cont = document.getElementById('messages-container');
             cont.innerHTML = messages.map(m => `
                 <div class="flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}">
-                    <div class="max-w-[80%] p-4 rounded-2xl ${m.sender === 'user' ? 'bg-[#002147] text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-sm'}">
-                        <p class="text-xs font-medium leading-relaxed">${m.text}</p>
-                        <p class="text-[8px] mt-2 opacity-50 uppercase font-black">${m.sender === 'user' ? 'You' : 'Agent'}</p>
+                    <div class="max-w-[85%] p-4 rounded-2xl shadow-sm ${m.sender === 'user' ? 'bg-[#002147] text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'}">
+                        <p class="text-xs font-bold leading-relaxed">${m.text}</p>
+                        <p class="text-[7px] mt-1.5 opacity-50 uppercase font-black tracking-widest">${m.sender === 'user' ? 'Sent' : 'Agent'}</p>
                     </div>
                 </div>
             `).join('');
