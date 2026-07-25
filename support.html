@@ -6,88 +6,151 @@
     <title>Support | Trust Bank</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body class="bg-slate-50 pb-32">
     <div id="header-container"></div>
-    <main class="max-w-md mx-auto px-6 pt-8 space-y-6">
-        <section id="ticket-form-section" class="bg-white p-8 rounded-[2.5rem] border border-slate-200">
-            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-[#002147] mb-6">Open New Ticket</h3>
-            <form id="ticket-form" class="space-y-6">
-                <div>
-                    <label>Subject</label>
-                    <input type="text" id="subject" class="w-full" placeholder="Issue with transfer..." required>
-                </div>
-                <div>
-                    <label>Message</label>
-                    <textarea id="message" class="w-full h-32 py-4" placeholder="Describe your issue in detail..." required></textarea>
-                </div>
-                <button type="submit" id="submit-btn" class="w-full btn-primary h-16 shadow-xl shadow-navy-900/20">Send Message</button>
-            </form>
-        </section>
-
-        <section>
-            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-[#002147] mb-6">Support History</h3>
+    
+    <main class="max-w-md mx-auto px-6 pt-8">
+        <!-- Ticket List View -->
+        <div id="list-view" class="space-y-6">
+            <button id="new-ticket-btn" class="w-full bg-[#002147] text-white p-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest">
+                <i class="fa-solid fa-plus mr-2"></i> Open New Ticket
+            </button>
             <div id="ticket-list" class="space-y-4"></div>
-        </section>
+        </div>
+
+        <!-- Chat View (Hidden by default) -->
+        <div id="chat-view" class="hidden flex flex-col h-[70vh]">
+            <button id="back-btn" class="mb-4 text-slate-400 text-xs font-black uppercase tracking-widest">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Back to Tickets
+            </button>
+            
+            <div id="messages-container" class="flex-1 overflow-y-auto space-y-4 p-2">
+                <!-- Messages populate here -->
+            </div>
+
+            <div class="mt-4 flex gap-2">
+                <input type="text" id="chat-input" placeholder="Type a message..." class="flex-1 bg-white">
+                <button id="send-msg-btn" class="w-12 h-12 bg-[#002147] text-[#D4AF37] rounded-xl">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- New Ticket Modal (Hidden) -->
+        <div id="new-ticket-modal" class="hidden fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-6">
+            <div class="bg-white rounded-[2rem] p-8 w-full max-w-sm space-y-6">
+                <h3 class="font-black text-[#002147] uppercase text-xs tracking-widest">New Support Ticket</h3>
+                <input type="text" id="subject" placeholder="Subject (e.g., Transfer issue)" class="w-full bg-slate-50">
+                <textarea id="first-msg" placeholder="Initial message..." class="w-full h-32 bg-slate-50"></textarea>
+                <div class="flex gap-2">
+                    <button id="close-modal" class="flex-1 p-4 font-bold text-slate-400">Cancel</button>
+                    <button id="submit-ticket" class="flex-1 btn-primary p-4">Create</button>
+                </div>
+            </div>
+        </div>
     </main>
+
     <div id="nav-container"></div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { renderHeader, renderBottomNav, renderStatusBadge, renderEmptyState } from './components.js';
+        import { formatDate } from './utils.js';
         import { showToast } from './toast.js';
 
         document.getElementById('header-container').innerHTML = renderHeader('Support', true);
         document.getElementById('nav-container').innerHTML = renderBottomNav('settings');
 
-        document.getElementById('ticket-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submit-btn');
-            btn.disabled = true;
-
-            try {
-                await addDoc(collection(db, "supportTickets"), {
-                    uid: auth.currentUser.uid,
-                    subject: document.getElementById('subject').value,
-                    status: "OPEN",
-                    createdAt: serverTimestamp(),
-                    messages: [{
-                        sender: "user",
-                        text: document.getElementById('message').value,
-                        timestamp: new Date().toISOString()
-                    }]
-                });
-                showToast("Ticket created successfully.", "success");
-                document.getElementById('ticket-form').reset();
-            } catch (err) {
-                showToast(err.message, "error");
-            } finally {
-                btn.disabled = false;
-            }
-        };
+        let activeTicketId = null;
 
         auth.onAuthStateChanged(user => {
-            if (user) {
-                const q = query(collection(db, "supportTickets"), where("uid", "==", user.uid), orderBy("createdAt", "desc"));
-                onSnapshot(q, snap => {
-                    const cont = document.getElementById('ticket-list');
-                    if (snap.empty) { cont.innerHTML = renderEmptyState("No active support tickets."); return; }
-                    cont.innerHTML = snap.docs.map(doc => {
-                        const t = doc.data();
-                        return `
-                            <div class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center">
-                                <div>
-                                    <p class="font-black text-[#002147] text-sm">${t.subject}</p>
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase mt-1">Ticket ID: ${doc.id.slice(0,8)}</p>
-                                </div>
-                                ${renderStatusBadge(t.status)}
+            if (!user) return;
+
+            const q = query(collection(db, "supportTickets"), where("uid", "==", user.uid), orderBy("createdAt", "desc"));
+            
+            onSnapshot(q, snap => {
+                const listCont = document.getElementById('ticket-list');
+                if (snap.empty) { listCont.innerHTML = renderEmptyState("No support history."); return; }
+                
+                listCont.innerHTML = snap.docs.map(dDoc => {
+                    const t = dDoc.data();
+                    return `
+                        <div onclick="openTicket('${dDoc.id}')" class="bg-white p-5 rounded-3xl border border-slate-100 flex justify-between items-center cursor-pointer shadow-sm active:scale-95 transition-transform">
+                            <div>
+                                <p class="font-black text-[#002147] text-sm">${t.subject}</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Ref: ${dDoc.id.slice(0,6)}</p>
                             </div>
-                        `;
-                    }).join('');
+                            ${renderStatusBadge(t.status)}
+                        </div>
+                    `;
+                }).join('');
+
+                if (activeTicketId) {
+                    const ticket = snap.docs.find(d => d.id === activeTicketId)?.data();
+                    if (ticket) renderMessages(ticket.messages);
+                }
+            });
+
+            // Ticket creation
+            document.getElementById('submit-ticket').onclick = async () => {
+                const subj = document.getElementById('subject').value;
+                const msg = document.getElementById('first-msg').value;
+                if (!subj || !msg) return;
+
+                await addDoc(collection(db, "supportTickets"), {
+                    uid: user.uid,
+                    subject: subj,
+                    status: "OPEN",
+                    createdAt: serverTimestamp(),
+                    messages: [{ sender: "user", text: msg, timestamp: new Date().toISOString() }]
                 });
-            }
+                document.getElementById('new-ticket-modal').classList.add('hidden');
+                showToast("Ticket opened!");
+            };
+
+            // Send message
+            document.getElementById('send-msg-btn').onclick = async () => {
+                const text = document.getElementById('chat-input').value;
+                if (!text || !activeTicketId) return;
+
+                await updateDoc(doc(db, "supportTickets", activeTicketId), {
+                    messages: arrayUnion({ sender: "user", text, timestamp: new Date().toISOString() }),
+                    status: "OPEN"
+                });
+                document.getElementById('chat-input').value = "";
+            };
         });
+
+        window.openTicket = (id) => {
+            activeTicketId = id;
+            document.getElementById('list-view').classList.add('hidden');
+            document.getElementById('chat-view').classList.remove('hidden');
+        };
+
+        document.getElementById('back-btn').onclick = () => {
+            activeTicketId = null;
+            document.getElementById('list-view').classList.remove('hidden');
+            document.getElementById('chat-view').classList.add('hidden');
+        };
+
+        const renderMessages = (messages) => {
+            const cont = document.getElementById('messages-container');
+            cont.innerHTML = messages.map(m => `
+                <div class="flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}">
+                    <div class="max-w-[80%] p-4 rounded-2xl ${m.sender === 'user' ? 'bg-[#002147] text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-sm'}">
+                        <p class="text-xs font-medium leading-relaxed">${m.text}</p>
+                        <p class="text-[8px] mt-2 opacity-50 uppercase font-black">${m.sender === 'user' ? 'You' : 'Agent'}</p>
+                    </div>
+                </div>
+            `).join('');
+            cont.scrollTop = cont.scrollHeight;
+        };
+
+        document.getElementById('new-ticket-btn').onclick = () => document.getElementById('new-ticket-modal').classList.remove('hidden');
+        document.getElementById('close-modal').onclick = () => document.getElementById('new-ticket-modal').classList.add('hidden');
     </script>
 </body>
 </html>
