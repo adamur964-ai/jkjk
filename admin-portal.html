@@ -13,12 +13,14 @@
         .tb-table td { padding: 12px; font-size: 11px; border-bottom: 1px solid #334155; }
         #chat-body::-webkit-scrollbar { width: 4px; }
         #chat-body::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        .kyc-img-preview { max-width: 100%; border-radius: 15px; border: 1px solid #334155; }
     </style>
 </head>
 <body class="bg-[#0f172a] text-slate-100 min-h-screen">
     <nav class="bg-[#1e293b] p-6 flex justify-between items-center border-b border-slate-800">
         <h1 class="font-black uppercase tracking-widest text-sm text-[#D4AF37]">Central Control</h1>
         <div class="flex items-center gap-6">
+            <div id="msg-notify-dot" class="hidden w-3 h-3 bg-rose-500 rounded-full animate-bounce"></div>
             <span id="admin-email" class="text-[10px] font-bold text-slate-400 uppercase">---</span>
             <button id="logout-btn" class="bg-rose-500/10 text-rose-500 px-4 py-1.5 rounded-full text-[10px] font-black uppercase">Exit</button>
         </div>
@@ -30,30 +32,49 @@
             <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="deposits">Deposits</button>
             <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="withdrawals">Withdrawals</button>
             <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="transfers">Transfers</button>
-            <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="kyc">KYC</button>
+            <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="kyc">KYC Vault</button>
             <button class="tab-btn px-6 py-3 rounded-xl text-[10px] font-black uppercase border border-slate-800" data-tab="supportTickets">Live Chat</button>
         </div>
 
         <div id="tab-content" class="bg-[#1e293b]/30 rounded-[2rem] border border-slate-800 p-8"></div>
     </div>
 
-    <!-- Chat Modal -->
-    <div id="chat-modal" class="hidden fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-6 backdrop-blur-md">
-        <div class="bg-[#1e293b] w-full max-w-lg rounded-[2.5rem] p-8 border border-slate-700 h-[650px] flex flex-col shadow-2xl">
-            <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
-                <div>
-                    <h3 id="chat-subject" class="font-black uppercase text-sm">Customer Support</h3>
-                    <p id="chat-ref" class="text-[9px] text-slate-500 font-bold uppercase"></p>
-                </div>
-                <button onclick="closeAdminChat()" class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+    <!-- KYC Preview Modal -->
+    <div id="kyc-modal" class="hidden fixed inset-0 bg-black/90 z-[300] flex items-center justify-center p-6 backdrop-blur-md">
+        <div class="bg-[#1e293b] w-full max-w-2xl rounded-[2.5rem] p-8 border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-black uppercase text-sm">KYC Document Preview</h3>
+                <button onclick="document.getElementById('kyc-modal').classList.add('hidden')" class="text-slate-500 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            <div id="chat-body" class="flex-1 overflow-y-auto space-y-4 mb-6 pr-2"></div>
-            <div class="flex gap-2 bg-slate-900 p-2 rounded-2xl">
-                <input type="text" id="admin-reply" class="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4" placeholder="Reply to customer...">
-                <button id="send-reply-btn" class="bg-[#D4AF37] text-[#002147] px-6 py-3 rounded-xl font-black uppercase text-[10px]">Send</button>
+            <div id="kyc-details" class="mb-6 grid grid-cols-2 gap-4 text-[10px] uppercase font-bold text-slate-400">
+                <p>Type: <span id="kyc-type-text" class="text-white"></span></p>
+                <p>UID: <span id="kyc-uid-text" class="text-white"></span></p>
+            </div>
+            <img id="kyc-large-img" class="kyc-img-preview mx-auto shadow-2xl" src="">
+            <div class="mt-8 flex gap-4">
+                <button id="kyc-approve-btn" class="flex-1 bg-emerald-600 p-4 rounded-xl font-black uppercase text-[10px]">Verify Identity</button>
+                <button id="kyc-decline-btn" class="flex-1 bg-rose-600 p-4 rounded-xl font-black uppercase text-[10px]">Reject Document</button>
             </div>
         </div>
     </div>
+
+    <!-- Live Chat Modal -->
+    <div id="chat-modal" class="hidden fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-6 backdrop-blur-md">
+        <div class="bg-[#1e293b] w-full max-w-lg rounded-[2.5rem] p-8 border border-slate-700 h-[650px] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-start mb-6 border-b border-slate-700 pb-4">
+                <h3 id="chat-subject" class="font-black uppercase text-sm">Thread</h3>
+                <button onclick="closeAdminChat()" class="text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="chat-body" class="flex-1 overflow-y-auto space-y-4 mb-6 pr-2"></div>
+            <div class="flex gap-2 bg-slate-900 p-2 rounded-2xl">
+                <input type="text" id="admin-reply" class="flex-1 bg-transparent border-none text-sm px-4" placeholder="Reply...">
+                <button id="send-reply-btn" class="bg-[#D4AF37] text-navy-900 px-6 py-3 rounded-xl font-black uppercase text-[10px]">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Audio -->
+    <audio id="ping-sound" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
 
     <script type="module">
         import { auth, db, ADMIN_EMAIL } from './firebase-config.js';
@@ -64,114 +85,108 @@
         auth.onAuthStateChanged(user => {
             if (!user || user.email !== ADMIN_EMAIL) window.location.href = "login.html";
             document.getElementById('admin-email').innerText = user.email;
+            initGlobalChatListener();
         });
 
-        let chatUnsubscribe = null;
+        // 1. GLOBAL CHAT NOTIFICATIONS
+        function initGlobalChatListener() {
+            let initialLoad = true;
+            onSnapshot(collection(db, "supportTickets"), (snap) => {
+                if (initialLoad) { initialLoad = false; return; }
+                
+                snap.docChanges().forEach(change => {
+                    const data = change.doc.data();
+                    const lastMsg = data.messages[data.messages.length - 1];
+                    
+                    if (change.type === "modified" && lastMsg.sender === "user") {
+                        showToast(`New Message: ${data.subject}`);
+                        document.getElementById('msg-notify-dot').classList.remove('hidden');
+                        document.getElementById('ping-sound').play();
+                    }
+                });
+            });
+        }
 
         const loadTab = (tab) => {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            const content = document.getElementById('tab-content');
+            
             onSnapshot(collection(db, tab), async (snap) => {
-                const content = document.getElementById('tab-content');
-                if (tab === 'users') {
+                if (tab === 'kyc') {
+                    content.innerHTML = `<table class="tb-table w-full">
+                        <thead><tr><th>User UID</th><th>Doc Type</th><th>Status</th><th>View</th></tr></thead>
+                        <tbody>${snap.docs.map(dDoc => {
+                            const d = dDoc.data();
+                            return `<tr>
+                                <td class="font-mono text-slate-500">${d.uid.slice(0,10)}...</td>
+                                <td class="font-bold">${d.documentType}</td>
+                                <td>${d.status}</td>
+                                <td><button onclick="viewKYC('${dDoc.id}')" class="bg-[#D4AF37] text-navy-900 px-3 py-1 rounded font-black text-[9px] uppercase">View File</button></td>
+                            </tr>`;
+                        }).join('')}</tbody></table>`;
+                } else if (tab === 'supportTickets') {
+                    document.getElementById('msg-notify-dot').classList.add('hidden');
+                    content.innerHTML = `<table class="tb-table w-full">
+                        <thead><tr><th>Subject</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>${snap.docs.map(tDoc => {
+                            const t = tDoc.data();
+                            return `<tr><td>${t.subject}</td><td>${t.status}</td><td><button onclick="openAdminChat('${tDoc.id}')" class="text-blue-400 font-bold uppercase text-[9px]">Chat</button></td></tr>`;
+                        }).join('')}</tbody></table>`;
+                } else if (tab === 'users') {
                     const accs = await getDocs(collection(db, "accounts"));
                     const accMap = {}; accs.forEach(a => accMap[a.data().ownerUid] = a.data());
-                    content.innerHTML = `
-                        <table class="tb-table w-full">
-                            <thead><tr><th>User</th><th>Account ID</th><th>Available Balance</th><th>Action</th></tr></thead>
-                            <tbody>${snap.docs.map(uDoc => {
-                                const u = uDoc.data();
-                                const a = accMap[u.uid] || {};
-                                return `<tr>
-                                    <td>${u.fullName}<br><span class="text-[9px] text-slate-500 uppercase font-bold">${u.email}</span></td>
-                                    <td class="font-mono text-slate-400">${a.accountNumber || 'NO ACCOUNT'}</td>
-                                    <td class="text-[#D4AF37] font-black">${formatCurrency(a.availableBalance)}</td>
-                                    <td>
-                                        <button onclick="manageUser('${u.uid}', '${u.fullName}')" class="bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-lg font-black uppercase text-[9px]">Add/Remove Money</button>
-                                    </td>
-                                </tr>`;
-                            }).join('')}</tbody>
-                        </table>`;
-                } else if (tab === 'supportTickets') {
-                    content.innerHTML = `<table class="tb-table w-full"><thead><tr><th>Subject</th><th>Status</th><th>Action</th></tr></thead>
-                            <tbody>${snap.docs.map(tDoc => {
-                                const t = tDoc.data();
-                                return `<tr><td>${t.subject}</td><td>${t.status}</td><td><button onclick="openAdminChat('${tDoc.id}')" class="text-blue-400 font-black uppercase text-[9px]">Chat</button></td></tr>`;
-                            }).join('')}</tbody></table>`;
+                    content.innerHTML = `<table class="tb-table w-full"><thead><tr><th>User</th><th>Balance</th><th>Action</th></tr></thead>
+                        <tbody>${snap.docs.map(uDoc => {
+                            const u = uDoc.data();
+                            const a = accMap[u.uid] || {};
+                            return `<tr><td>${u.fullName}<br><span class="text-[9px] text-slate-500 font-bold uppercase">${u.email}</span></td>
+                            <td class="text-[#D4AF37] font-black">${formatCurrency(a.availableBalance)}</td>
+                            <td><button onclick="manageUser('${u.uid}', '${u.fullName}')" class="bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-lg font-black uppercase text-[9px]">Adjust Balance</button></td></tr>`;
+                        }).join('')}</tbody></table>`;
                 } else {
-                    content.innerHTML = `
-                        <table class="tb-table w-full">
-                            <thead><tr><th>ID</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
-                            <tbody>${snap.docs.map(dDoc => {
-                                const d = dDoc.data();
-                                return `<tr><td>${dDoc.id.slice(0,6)}</td><td class="font-black">${formatCurrency(d.amount)}</td><td>${d.status}</td>
-                                    <td>${d.status === 'PENDING' ? `<button onclick="approveRequest('${tab}', '${dDoc.id}')" class="text-emerald-400 mr-3">Approve</button><button onclick="declinePrompt('${tab}', '${dDoc.id}')" class="text-rose-400">Decline</button>` : 'Processed'}</td>
-                                </tr>`;
-                            }).join('')}</tbody>
-                        </table>`;
+                    content.innerHTML = `<table class="tb-table w-full"><thead><tr><th>ID</th><th>Value</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>${snap.docs.map(dDoc => {
+                            const d = dDoc.data();
+                            return `<tr><td>${dDoc.id.slice(0,6)}</td><td class="font-black">${formatCurrency(d.amount)}</td><td>${d.status}</td>
+                            <td>${d.status === 'PENDING' ? `<button onclick="approveRequest('${tab}', '${dDoc.id}')" class="text-emerald-400 mr-3">Approve</button><button onclick="declinePrompt('${tab}', '${dDoc.id}')" class="text-rose-400">Decline</button>` : 'Processed'}</td></tr>`;
+                        }).join('')}</tbody></table>`;
                 }
             });
         };
 
-        // --- NEW: ADD/REMOVE MONEY LOGIC ---
-        window.manageUser = async (uid, name) => {
-            const amountStr = prompt(`Adjust Balance for ${name}\n\nEnter amount (use '-' to remove, e.g. -500):`);
-            if (!amountStr || isNaN(amountStr)) return;
+        // 2. KYC VIEW LOGIC
+        window.viewKYC = async (id) => {
+            const snap = await getDocs(query(collection(db, "kyc"), where("__name__", "==", id)));
+            const data = snap.docs[0].data();
+            
+            document.getElementById('kyc-large-img').src = data.documentImage;
+            document.getElementById('kyc-type-text').innerText = data.documentType;
+            document.getElementById('kyc-uid-text').innerText = data.uid;
+            document.getElementById('kyc-modal').classList.remove('hidden');
 
-            const reason = prompt("Enter reason for this adjustment (User will see this):", "Admin Adjustment");
-            if (!reason) return;
-
-            const amount = parseFloat(amountStr);
-
-            try {
-                // 1. Find the account
-                const accQ = query(collection(db, "accounts"), where("ownerUid", "==", uid));
-                const accSnap = await getDocs(accQ);
-
-                if (accSnap.empty) {
-                    alert("No bank account found for this user.");
-                    return;
-                }
-
-                const accDocId = accSnap.docs[0].id;
-                const accRef = doc(db, "accounts", accDocId);
-
-                // 2. Perform atomic update
-                await updateDoc(accRef, {
-                    availableBalance: increment(amount),
-                    totalBalance: increment(amount)
-                });
-
-                // 3. Create a transaction record for the user's history
-                await addDoc(collection(db, "transactions"), {
-                    uid: uid,
-                    amount: Math.abs(amount),
-                    type: "ADMIN_ADJUSTMENT",
-                    direction: amount > 0 ? "credit" : "debit",
-                    description: reason,
-                    status: "SUCCESSFUL",
-                    timestamp: serverTimestamp()
-                });
-
-                showToast(`Success: ${amount > 0 ? 'Added' : 'Removed'} ${formatCurrency(Math.abs(amount))}`);
-            } catch (err) {
-                console.error(err);
-                showToast("Error updating balance", "error");
-            }
+            document.getElementById('kyc-approve-btn').onclick = () => {
+                approveRequest('kyc', id);
+                document.getElementById('kyc-modal').classList.add('hidden');
+            };
+            document.getElementById('kyc-decline-btn').onclick = () => {
+                declinePrompt('kyc', id);
+                document.getElementById('kyc-modal').classList.add('hidden');
+            };
         };
 
+        let chatUnsubscribe = null;
         window.openAdminChat = (id) => {
             const modal = document.getElementById('chat-modal');
             const body = document.getElementById('chat-body');
-            document.getElementById('chat-ref').innerText = `Thread: ${id}`;
             modal.classList.remove('hidden');
             chatUnsubscribe = onSnapshot(doc(db, "supportTickets", id), (snap) => {
                 const data = snap.data();
                 if (!data) return;
+                document.getElementById('chat-subject').innerText = data.subject;
                 body.innerHTML = data.messages.map(m => `
                     <div class="flex ${m.sender === 'user' ? 'justify-start' : 'justify-end'}">
-                        <div class="max-w-[85%] p-4 rounded-2xl ${m.sender === 'user' ? 'bg-slate-800 text-slate-200' : 'bg-blue-600 text-white'}">
+                        <div class="max-w-[85%] p-4 rounded-2xl ${m.sender === 'user' ? 'bg-slate-800 text-slate-200' : 'bg-blue-600 text-white shadow-lg'}">
                             <p class="text-xs font-bold">${m.text}</p>
-                            <p class="text-[8px] mt-2 uppercase opacity-50 font-black">${m.sender}</p>
                         </div>
                     </div>`).join('');
                 body.scrollTop = body.scrollHeight;
@@ -181,7 +196,7 @@
                 if (!text) return;
                 await updateDoc(doc(db, "supportTickets", id), {
                     messages: arrayUnion({ sender: "admin", text, timestamp: new Date().toISOString() }),
-                    status: "PENDING"
+                    status: "OPEN"
                 });
                 document.getElementById('admin-reply').value = "";
             };
@@ -189,31 +204,22 @@
 
         window.closeAdminChat = () => { if (chatUnsubscribe) chatUnsubscribe(); document.getElementById('chat-modal').classList.add('hidden'); };
 
-        // Standard Approvals
         window.approveRequest = async (type, id) => {
             try {
                 await runTransaction(db, async (transaction) => {
                     const reqRef = doc(db, type, id);
                     const reqSnap = await transaction.get(reqRef);
                     const req = reqSnap.data();
-                    const accQ = await getDocs(query(collection(db, "accounts"), where("ownerUid", "==", req.uid)));
-                    const accRef = doc(db, "accounts", accQ.docs[0].id);
-                    const acc = accQ.docs[0].data();
 
-                    if(type === 'deposits') {
-                        transaction.update(accRef, { availableBalance: acc.availableBalance + req.amount, totalBalance: acc.totalBalance + req.amount });
-                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'DEPOSIT', direction: 'credit', description: 'Bank Deposit Approved', status: "SUCCESSFUL", timestamp: serverTimestamp() });
-                    } else if(type === 'withdrawals') {
-                        transaction.update(accRef, { availableBalance: acc.availableBalance - req.amount, totalBalance: acc.totalBalance - req.amount });
-                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'WITHDRAW', direction: 'debit', description: 'Bank Withdrawal Approved', status: "SUCCESSFUL", timestamp: serverTimestamp() });
-                    } else if(type === 'transfers') {
-                        const recipQ = await getDocs(query(collection(db, "accounts"), where("accountNumber", "==", req.recipientAcc)));
-                        transaction.update(accRef, { availableBalance: acc.availableBalance - req.amount });
-                        transaction.update(doc(db, "accounts", recipQ.docs[0].id), { availableBalance: recipQ.docs[0].data().availableBalance + req.amount });
-                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: 'TRANSFER', direction: 'debit', description: `To ${req.recipientAcc}`, status: "SUCCESSFUL", timestamp: serverTimestamp() });
-                        transaction.set(doc(collection(db, "transactions")), { uid: recipQ.docs[0].data().ownerUid, amount: req.amount, type: 'TRANSFER', direction: 'credit', description: `From Admin/Correction`, status: "SUCCESSFUL", timestamp: serverTimestamp() });
-                    } else if(type === 'kyc') {
+                    if (type === 'kyc') {
                         transaction.update(doc(db, "users", req.uid), { kycStatus: 'VERIFIED' });
+                    } else {
+                        const accQ = await getDocs(query(collection(db, "accounts"), where("ownerUid", "==", req.uid)));
+                        const accRef = doc(db, "accounts", accQ.docs[0].id);
+                        const acc = accQ.docs[0].data();
+                        const amount = type === 'deposits' ? req.amount : -req.amount;
+                        transaction.update(accRef, { availableBalance: acc.availableBalance + amount });
+                        transaction.set(doc(collection(db, "transactions")), { uid: req.uid, amount: req.amount, type: type.toUpperCase(), direction: amount > 0 ? 'credit' : 'debit', description: `Approved ${type}`, status: "SUCCESSFUL", timestamp: serverTimestamp() });
                     }
                     transaction.update(reqRef, { status: 'APPROVED' });
                 });
@@ -225,7 +231,20 @@
             const reason = prompt("Decline Reason:");
             if(!reason) return;
             await updateDoc(doc(db, type, id), { status: 'DECLINED', declineReason: reason });
+            if(type === 'kyc') {
+                const kSnap = await getDocs(query(collection(db, "kyc"), where("__name__", "==", id)));
+                await updateDoc(doc(db, "users", kSnap.docs[0].data().uid), { kycStatus: 'REJECTED' });
+            }
             showToast("Request Declined");
+        };
+
+        window.manageUser = async (uid, name) => {
+            const amt = prompt(`Adjust Balance for ${name}:`);
+            if(!amt || isNaN(amt)) return;
+            const accQ = await getDocs(query(collection(db, "accounts"), where("ownerUid", "==", uid)));
+            await updateDoc(doc(db, "accounts", accQ.docs[0].id), { availableBalance: increment(parseFloat(amt)) });
+            await addDoc(collection(db, "transactions"), { uid, amount: Math.abs(amt), direction: amt > 0 ? 'credit' : 'debit', type: 'ADMIN', description: 'Admin Adjustment', status: 'SUCCESSFUL', timestamp: serverTimestamp() });
+            showToast("Balance Adjusted");
         };
 
         document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => loadTab(b.dataset.tab));
