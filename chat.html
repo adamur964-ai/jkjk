@@ -4,48 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trust Concierge | Support</title>
+    <title>Support Chat | Trust Bank</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <style>
-        .msg-bubble { max-width: 85%; padding: 12px 16px; border-radius: 1.5rem; font-size: 14px; line-height: 1.5; }
+        .msg-bubble { max-width: 80%; padding: 12px 16px; border-radius: 1.2rem; font-size: 14px; }
         .msg-user { background: #002147; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .msg-admin { background: white; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #e2e8f0; }
-        #chat-flow { height: calc(100vh - 180px); overflow-y: auto; scroll-behavior: smooth; }
+        #chat-flow { height: calc(100vh - 180px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
     </style>
 </head>
 <body class="bg-slate-50 h-screen flex flex-col">
 
-    <!-- Header -->
     <header class="bg-white border-b p-4 flex items-center justify-between sticky top-0 z-50">
         <div class="flex items-center gap-3">
             <a href="dashboard.html" class="text-slate-400"><i class="fa-solid fa-chevron-left"></i></a>
             <div class="relative">
-                <img src="https://ui-avatars.com/api/?name=Bank+Support&background=002147&color=fff" class="w-10 h-10 rounded-full">
+                <img src="https://ui-avatars.com/api/?name=Trust+Support&background=002147&color=fff" class="w-10 h-10 rounded-full">
                 <div class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>
             </div>
-            <div>
-                <h2 class="text-sm font-black text-[#002147]">Support Concierge</h2>
-                <p id="status-text" class="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Online • Ready to help</p>
-            </div>
+            <div><h2 class="text-sm font-black text-[#002147]">Trust Support</h2><p class="text-[9px] font-bold text-emerald-500 uppercase">Always Online</p></div>
         </div>
     </header>
 
-    <!-- Chat Area -->
-    <main id="chat-flow" class="flex-1 p-6 flex flex-col gap-4 bg-[#f8fafc]">
-        <div class="text-center my-4">
-            <span class="text-[10px] font-black uppercase text-slate-400 bg-white px-4 py-1 rounded-full border border-slate-100">End-to-End Encrypted</span>
-        </div>
-    </main>
+    <main id="chat-flow" class="flex-1 p-6 bg-[#f8fafc]"></main>
 
-    <!-- Input -->
     <div class="p-4 bg-white border-t">
-        <div class="max-w-md mx-auto flex items-center gap-2 bg-slate-100 p-2 rounded-2xl">
-            <input type="text" id="chat-input" placeholder="Type your message..." class="flex-1 bg-transparent border-none focus:ring-0 text-sm font-bold text-[#002147] px-2">
-            <button id="send-btn" class="w-10 h-10 bg-[#002147] text-[#D4AF37] rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-transform">
-                <i class="fa-solid fa-paper-plane"></i>
-            </button>
+        <div class="max-w-md mx-auto flex items-center gap-2 bg-slate-100 p-2 rounded-2xl border">
+            <input type="text" id="chat-input" placeholder="Type a message..." class="flex-1 bg-transparent border-none focus:ring-0 text-sm font-bold text-[#002147] px-2">
+            <button id="send-btn" class="w-10 h-10 bg-[#002147] text-[#D4AF37] rounded-xl flex items-center justify-center"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
     </div>
 
@@ -59,63 +47,33 @@
         auth.onAuthStateChanged(user => {
             if (!user) return window.location.href = 'login.html';
             userUid = user.uid;
-            userName = user.displayName || "Client";
-            initChat();
-        });
-
-        function initChat() {
-            const chatFlow = document.getElementById('chat-flow');
-            
-            // 1. Listen for messages
+            userName = user.displayName || "Bank Client";
             const q = query(collection(db, "supportTickets", userUid, "messages"), orderBy("timestamp", "asc"));
             onSnapshot(q, snap => {
-                chatFlow.innerHTML = "";
-                snap.docs.forEach(d => {
+                const flow = document.getElementById('chat-flow');
+                flow.innerHTML = snap.docs.map(d => {
                     const m = d.data();
-                    const isUser = m.senderRole === 'user';
-                    const time = m.timestamp ? new Date(m.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
-                    
-                    chatFlow.innerHTML += `
-                        <div class="flex flex-col ${isUser ? 'items-end' : 'items-start'}">
-                            <div class="msg-bubble ${isUser ? 'msg-user' : 'msg-admin'} shadow-sm">
-                                ${m.text}
-                                <div class="text-[8px] mt-1 opacity-50 ${isUser ? 'text-right' : ''}">${time}</div>
-                            </div>
-                        </div>`;
-                });
-                chatFlow.scrollTop = chatFlow.scrollHeight;
-                
-                // Clear unread count for user
+                    const isMe = m.senderRole === 'user';
+                    return `<div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                        <div class="msg-bubble ${isMe ? 'msg-user' : 'msg-admin'} shadow-sm">${m.text}</div>
+                    </div>`;
+                }).join('');
+                flow.scrollTop = flow.scrollHeight;
                 updateDoc(doc(db, "supportTickets", userUid), { unreadUserCount: 0 });
             });
-        }
+        });
 
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const text = input.value.trim();
             if (!text) return;
             input.value = "";
-
-            const msgData = {
-                text,
-                senderRole: 'user',
-                timestamp: serverTimestamp()
-            };
-
-            // 1. Add message to subcollection
-            await addDoc(collection(db, "supportTickets", userUid, "messages"), msgData);
-
-            // 2. Update parent ticket metadata for Admin CRM
-            await setDoc(doc(db, "supportTickets", userUid), {
-                uid: userUid,
-                userName: userName,
-                lastMessage: text,
-                lastTimestamp: serverTimestamp(),
-                unreadAdminCount: increment(1),
-                status: 'OPEN'
+            await addDoc(collection(db, "supportTickets", userUid, "messages"), { text, senderRole: 'user', timestamp: serverTimestamp() });
+            await setDoc(doc(db, "supportTickets", userUid), { 
+                uid: userUid, userName, lastMessage: text, lastTimestamp: serverTimestamp(), 
+                unreadAdminCount: increment(1), status: 'OPEN' 
             }, { merge: true });
         }
-
         document.getElementById('send-btn').onclick = sendMessage;
         document.getElementById('chat-input').onkeypress = (e) => e.key === 'Enter' && sendMessage();
     </script>
