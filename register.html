@@ -95,15 +95,22 @@
         };
 
         const createAccountInDb = async (uid, email, fullName, currency) => {
+            // Generate unique 10-digit account ID
             const accNum = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+            
+            // 1. Create User Document
             await setDoc(doc(db, "users", uid), {
                 uid, fullName, email,
+                accountNumber: accNum,
                 authProvider: "password",
                 role: "customer",
                 status: "active",
                 kycStatus: "NONE",
+                balance: 0,
                 createdAt: serverTimestamp()
             });
+
+            // 2. Create Core Banking Account
             await setDoc(doc(db, "accounts", accNum), {
                 accountNumber: accNum,
                 ownerUid: uid,
@@ -112,8 +119,10 @@
                 totalBalance: 0,
                 savingsBalance: 0,
                 accountType: "Individual",
+                status: "active",
                 createdAt: serverTimestamp()
             });
+
             saveSession({ uid, fullName, accNum });
             window.location.href = "set-pin.html";
         };
@@ -139,7 +148,6 @@
             submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
 
             try {
-                // FIXED: emailValue passed first, then passValue
                 const userCredential = await createUserWithEmailAndPassword(auth, emailValue, passValue);
                 await createAccountInDb(userCredential.user.uid, emailValue, document.getElementById('fullName').value, document.getElementById('currency').value);
             } catch (error) {
