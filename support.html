@@ -8,197 +8,155 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        .msg-user { background: #002147; color: white; align-self: flex-end; border-radius: 20px 20px 4px 20px; }
-        .msg-admin { background: white; color: #1e293b; align-self: flex-start; border-radius: 20px 20px 20px 4px; border: 1px solid #e2e8f0; }
+        /* STANDARD OF 3: FLOATING DOCK STYLES */
+        #user-chat-dock {
+            position: fixed;
+            bottom: 90px; /* Above bottom nav */
+            right: 20px;
+            width: 340px;
+            height: 480px;
+            background: white;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            transition: transform 0.3s ease;
+        }
+        #user-chat-dock.minimized { transform: translateY(425px); }
+        .dock-header { background: #002147; color: #D4AF37; padding: 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .msg-user { background: #002147; color: white; align-self: flex-end; border-radius: 14px 14px 2px 14px; }
+        .msg-admin { background: #f1f5f9; color: #1e293b; align-self: flex-start; border-radius: 14px 14px 14px 2px; border: 1px solid #e2e8f0; }
+        .msg-bubble { padding: 10px 14px; font-size: 12px; max-width: 85%; line-height: 1.4; }
     </style>
 </head>
 <body class="bg-slate-50 pb-20">
     <div id="header-container"></div>
     
     <main class="max-w-md mx-auto px-6 pt-6">
-        <!-- Dashboard for Support -->
         <div id="list-view" class="space-y-6">
             <div class="bg-[#002147] p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
                 <div class="relative z-10">
-                    <h2 class="text-xl font-black mb-2">How can we help?</h2>
-                    <p class="text-xs font-bold text-slate-300 mb-6">Our 24/7 support team is here to assist with your banking needs.</p>
-                    <button id="new-ticket-btn" class="bg-[#D4AF37] text-[#002147] px-6 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-transform">
-                        Start Live Chat
-                    </button>
+                    <h2 class="text-xl font-black mb-2">Need Assistance?</h2>
+                    <p class="text-xs font-bold text-slate-300 mb-6">Our concierge is ready to help you.</p>
+                    <button id="new-ticket-btn" class="bg-[#D4AF37] text-[#002147] px-6 py-4 rounded-2xl font-black uppercase text-[10px]">New Support Session</button>
                 </div>
             </div>
-            <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Your Conversations</h3>
+            <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Active Inquiries</h3>
             <div id="ticket-list" class="space-y-3"></div>
-        </div>
-
-        <!-- Real-Time Chat Window -->
-        <div id="chat-view" class="hidden flex flex-col h-[80vh]">
-            <div class="flex items-center gap-4 mb-6">
-                <button id="back-btn" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm"><i class="fa-solid fa-arrow-left"></i></button>
-                <div>
-                    <h2 id="chat-subject-text" class="font-black text-[#002147] text-sm truncate w-48">Chat</h2>
-                    <p class="text-[8px] font-bold text-emerald-500 uppercase tracking-tighter">Verified Agent Connected</p>
-                </div>
-            </div>
-            
-            <div id="messages-container" class="flex-1 overflow-y-auto space-y-4 px-2 py-4 border-t border-slate-100 flex flex-col"></div>
-
-            <div class="mt-4 bg-white p-2 rounded-2xl border border-slate-200 shadow-xl flex gap-2">
-                <input type="text" id="chat-input" placeholder="Write a message..." class="flex-1 bg-transparent border-none focus:ring-0 px-4 text-sm font-bold text-[#002147]">
-                <button id="send-msg-btn" class="w-12 h-12 bg-[#002147] text-[#D4AF37] rounded-xl"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
         </div>
     </main>
 
+    <!-- PERSISTENT CHAT DOCK -->
+    <div id="user-chat-dock">
+        <div class="dock-header" onclick="toggleDock()">
+            <span class="text-[10px] font-black uppercase tracking-widest">Live Concierge</span>
+            <div class="flex gap-3">
+                <i class="fa-solid fa-minus"></i>
+                <i class="fa-solid fa-xmark" onclick="closeDock(event)"></i>
+            </div>
+        </div>
+        <div id="user-msg-flow" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-slate-50"></div>
+        <div class="p-3 border-t border-slate-100 flex gap-2">
+            <input type="text" id="user-chat-input" placeholder="Type a message..." class="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-xs">
+            <button onclick="sendUserMessage()" class="text-[#002147] px-2"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
     <div id="nav-container"></div>
 
-    <!-- New Inquiry Modal -->
-    <div id="new-ticket-modal" class="hidden fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm">
-        <div class="bg-white rounded-[2.5rem] p-10 w-full max-w-sm space-y-6">
-            <div class="text-center">
-                <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] mx-auto mb-4"><i class="fa-solid fa-pen-nib text-xl"></i></div>
-                <h3 class="font-black text-[#002147] uppercase text-xs tracking-widest">New Inquiry</h3>
-            </div>
-            <input type="text" id="subject" placeholder="Topic (e.g. Missing Funds)" class="w-full bg-slate-50 border-none rounded-xl px-4 py-4 text-sm">
-            <textarea id="first-msg" placeholder="Tell us what's happening..." class="w-full h-32 bg-slate-50 border-none rounded-xl p-4 text-sm"></textarea>
+    <!-- Modal -->
+    <div id="new-ticket-modal" class="hidden fixed inset-0 bg-slate-900/60 z-[1100] flex items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-white rounded-[2.5rem] p-10 w-full max-w-sm">
+            <h3 class="font-black text-[#002147] uppercase text-xs text-center mb-6">Start New Session</h3>
+            <input type="text" id="subject" placeholder="What is this about?" class="w-full bg-slate-50 rounded-xl px-4 py-4 text-sm mb-4">
+            <textarea id="first-msg" placeholder="Describe your issue..." class="w-full h-32 bg-slate-50 rounded-xl p-4 text-sm mb-6"></textarea>
             <div class="flex gap-3">
-                <button id="close-modal" class="flex-1 font-bold text-slate-400 text-xs uppercase">Cancel</button>
-                <button id="submit-ticket" class="flex-1 btn-primary p-4 rounded-xl text-[10px]">Start Chat</button>
+                <button onclick="document.getElementById('new-ticket-modal').classList.add('hidden')" class="flex-1 text-slate-400 font-bold uppercase text-[10px]">Cancel</button>
+                <button id="submit-ticket" class="flex-1 btn-primary p-4 rounded-xl text-[10px]">Submit</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, setDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { renderHeader, renderBottomNav, renderStatusBadge, renderEmptyState } from './components.js';
         import { formatDate } from './utils.js';
 
         document.getElementById('header-container').innerHTML = renderHeader('Support', false);
         document.getElementById('nav-container').innerHTML = renderBottomNav('settings');
 
-        let activeTicketUid = null;
-        let messagesUnsubscribe = null;
-        let currentUserData = null;
+        let msgUnsubscribe = null;
+        let activeUid = null;
 
-        auth.onAuthStateChanged(async (user) => {
-            if (!user) return window.location.href = 'login.html';
-
-            const userSnap = await getDoc(doc(db, "users", user.uid));
-            if(userSnap.exists()) currentUserData = userSnap.data();
+        auth.onAuthStateChanged(user => {
+            if (!user) return;
+            activeUid = user.uid;
 
             onSnapshot(query(collection(db, "supportTickets"), where("uid", "==", user.uid)), snap => {
                 const listCont = document.getElementById('ticket-list');
                 if (snap.empty) { listCont.innerHTML = renderEmptyState("No recent chats."); return; }
-                
                 listCont.innerHTML = snap.docs.map(dDoc => {
                     const t = dDoc.data();
-                    const unreadBadge = t.unreadUserCount > 0 ? `<span class="bg-rose-600 text-white text-[9px] px-2 py-0.5 rounded-full font-black animate-pulse">${t.unreadUserCount}</span>` : '';
-                    return `
-                        <div onclick="openTicket('${dDoc.id}', '${t.subject || 'Support Conversation'}')" class="bg-white p-5 rounded-2xl border border-slate-100 flex justify-between items-center cursor-pointer shadow-sm active:bg-slate-50">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-[#002147]"><i class="fa-solid fa-comments"></i></div>
-                                <div><p class="font-black text-[#002147] text-sm">${t.subject || 'Support'}</p><p class="text-[8px] font-bold text-slate-400 uppercase">${t.lastMessage || 'Live Session'}</p></div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                ${unreadBadge}
-                                ${renderStatusBadge(t.status || 'OPEN')}
-                            </div>
-                        </div>`;
+                    return `<div onclick="openDock('${dDoc.id}')" class="bg-white p-5 rounded-2xl border border-slate-100 flex justify-between items-center cursor-pointer shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-[#002147]"><i class="fa-solid fa-comments"></i></div>
+                            <div><p class="font-black text-[#002147] text-sm">${t.subject || 'Support'}</p><p class="text-[8px] font-bold text-slate-400 uppercase">${t.lastMessage}</p></div>
+                        </div>
+                        ${t.unreadUserCount > 0 ? `<span class="bg-rose-600 text-white text-[9px] px-2 py-0.5 rounded-full font-black animate-pulse">${t.unreadUserCount}</span>` : renderStatusBadge(t.status)}
+                    </div>`;
                 }).join('');
             });
 
             document.getElementById('submit-ticket').onclick = async () => {
-                const subj = document.getElementById('subject').value.trim();
-                const msg = document.getElementById('first-msg').value.trim();
+                const subj = document.getElementById('subject').value;
+                const msg = document.getElementById('first-msg').value;
                 if (!subj || !msg) return;
-
-                const ticketRef = doc(db, "supportTickets", user.uid);
-                await setDoc(ticketRef, {
-                    uid: user.uid,
-                    userName: currentUserData?.fullName || user.displayName || "Client",
-                    email: user.email,
-                    subject: subj,
-                    lastMessage: msg,
-                    lastTimestamp: serverTimestamp(),
-                    unreadAdminCount: increment(1),
-                    status: "OPEN"
+                await setDoc(doc(db, "supportTickets", user.uid), {
+                    uid: user.uid, userName: user.displayName || "Client", subject: subj, lastMessage: msg,
+                    lastTimestamp: serverTimestamp(), unreadAdminCount: increment(1), status: "OPEN"
                 }, { merge: true });
-
-                await addDoc(collection(db, "supportTickets", user.uid, "messages"), {
-                    text: msg,
-                    senderRole: "user",
-                    timestamp: serverTimestamp()
-                });
-
+                await addDoc(collection(db, "supportTickets", user.uid, "messages"), { text: msg, senderRole: "user", timestamp: serverTimestamp() });
                 document.getElementById('new-ticket-modal').classList.add('hidden');
-                openTicket(user.uid, subj);
-            };
-
-            document.getElementById('send-msg-btn').onclick = async () => {
-                const input = document.getElementById('chat-input');
-                const text = input.value.trim();
-                if (!text || !activeTicketUid) return;
-                input.value = "";
-
-                await addDoc(collection(db, "supportTickets", activeTicketUid, "messages"), {
-                    text,
-                    senderRole: "user",
-                    timestamp: serverTimestamp()
-                });
-
-                await updateDoc(doc(db, "supportTickets", activeTicketUid), {
-                    lastMessage: text,
-                    lastTimestamp: serverTimestamp(),
-                    unreadAdminCount: increment(1),
-                    status: "OPEN"
-                });
+                openDock(user.uid);
             };
         });
 
-        window.openTicket = (uid, subj) => {
-            if (messagesUnsubscribe) messagesUnsubscribe();
-            activeTicketUid = uid;
-
-            document.getElementById('chat-subject-text').innerText = subj;
-            document.getElementById('list-view').classList.add('hidden');
-            document.getElementById('chat-view').classList.remove('hidden');
-            document.getElementById('header-container').classList.add('hidden');
-            document.getElementById('nav-container').classList.add('hidden');
-
+        window.openDock = (uid) => {
+            if (msgUnsubscribe) msgUnsubscribe();
+            const dock = document.getElementById('user-chat-dock');
+            dock.style.display = 'flex';
+            dock.classList.remove('minimized');
             updateDoc(doc(db, "supportTickets", uid), { unreadUserCount: 0 }).catch(() => {});
 
-            const q = query(collection(db, "supportTickets", uid, "messages"), orderBy("timestamp", "asc"));
-            messagesUnsubscribe = onSnapshot(q, snap => {
-                const cont = document.getElementById('messages-container');
-                cont.innerHTML = snap.docs.map(d => {
-                    const m = d.data();
-                    const isUser = m.senderRole === 'user';
-                    return `
-                        <div class="flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-2">
-                            <div class="max-w-[85%] p-4 rounded-2xl shadow-sm ${isUser ? 'msg-user' : 'msg-admin'}">
-                                <p class="text-xs font-bold leading-relaxed">${m.text}</p>
-                            </div>
-                            <span class="text-[8px] font-bold text-slate-400 uppercase mt-1 px-1">
-                                ${isUser ? 'You' : 'Agent'} • ${m.timestamp ? formatDate(m.timestamp) : 'Just now'}
-                            </span>
-                        </div>`;
+            msgUnsubscribe = onSnapshot(query(collection(db, "supportTickets", uid, "messages"), orderBy("timestamp", "asc")), snap => {
+                const flow = document.getElementById('user-msg-flow');
+                flow.innerHTML = snap.docs.map(d => {
+                    const m = d.data(); const isMe = m.senderRole === 'user';
+                    return `<div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-2">
+                        <div class="msg-bubble ${isMe ? 'msg-user' : 'msg-admin'}">${m.text}</div>
+                        <span class="text-[8px] font-bold text-slate-400 uppercase mt-1">${isMe ? 'You' : 'Agent'}</span>
+                    </div>`;
                 }).join('');
-                cont.scrollTop = cont.scrollHeight;
+                flow.scrollTop = flow.scrollHeight;
             });
         };
 
-        document.getElementById('back-btn').onclick = () => {
-            if (messagesUnsubscribe) messagesUnsubscribe();
-            activeTicketUid = null;
-            document.getElementById('list-view').classList.remove('hidden');
-            document.getElementById('chat-view').classList.add('hidden');
-            document.getElementById('header-container').classList.remove('hidden');
-            document.getElementById('nav-container').classList.remove('hidden');
+        window.sendUserMessage = async () => {
+            const input = document.getElementById('user-chat-input');
+            const text = input.value.trim();
+            if (!text || !activeUid) return;
+            input.value = "";
+            await addDoc(collection(db, "supportTickets", activeUid, "messages"), { text, senderRole: 'user', timestamp: serverTimestamp() });
+            await updateDoc(doc(db, "supportTickets", activeUid), { lastMessage: text, lastTimestamp: serverTimestamp(), unreadAdminCount: increment(1) });
         };
 
+        window.toggleDock = () => document.getElementById('user-chat-dock').classList.toggle('minimized');
+        window.closeDock = (e) => { e.stopPropagation(); if(msgUnsubscribe) msgUnsubscribe(); document.getElementById('user-chat-dock').style.display = 'none'; };
         document.getElementById('new-ticket-btn').onclick = () => document.getElementById('new-ticket-modal').classList.remove('hidden');
-        document.getElementById('close-modal').onclick = () => document.getElementById('new-ticket-modal').classList.add('hidden');
     </script>
 </body>
 </html>
