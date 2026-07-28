@@ -1,4 +1,3 @@
---- FILE: admin-portal.html ---
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,514 +8,262 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;600;700;900&display=swap');
-        
-        body { 
-            font-family: 'Public Sans', sans-serif; 
-            background-color: #0f172a; 
-            color: #f8fafc; 
-            overflow: hidden;
-        }
-
-        /* Custom Scrollbar */
+        body { font-family: 'Public Sans', sans-serif; background-color: #0f172a; color: #f8fafc; overflow: hidden; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-
-        .admin-sidebar-item { 
-            border-left: 4px solid transparent; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            opacity: 0.6;
-        }
-        .admin-sidebar-item.active { 
-            background: rgba(212, 175, 55, 0.1); 
-            color: #D4AF37; 
-            border-left: 4px solid #D4AF37; 
-            opacity: 1;
-        }
-
-        .glass-card {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* Table Styling */
-        .tb-table th { 
-            padding: 16px; 
-            font-size: 10px; 
-            font-weight: 900; 
-            text-transform: uppercase; 
-            color: #64748b; 
-            border-bottom: 1px solid #334155; 
-            text-align: left;
-            letter-spacing: 0.1em;
-        }
-        .tb-table td { 
-            padding: 16px; 
-            font-size: 12px; 
-            border-bottom: 1px solid #1e293b; 
-        }
-
-        /* Support Chat CRM Bubbles */
-        .msg-bubble { 
-            max-width: 75%; 
-            padding: 12px 16px; 
-            border-radius: 18px; 
-            font-size: 13px; 
-            line-height: 1.6;
-            position: relative;
-        }
-        .msg-admin { 
-            background: #D4AF37; 
-            color: #002147; 
-            align-self: flex-end; 
-            border-bottom-right-radius: 2px; 
-        }
-        .msg-user { 
-            background: #334155; 
-            color: white; 
-            align-self: flex-start; 
-            border-bottom-left-radius: 2px; 
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .admin-sidebar-item { border-left: 4px solid transparent; transition: all 0.3s; opacity: 0.6; cursor: pointer; }
+        .admin-sidebar-item.active { background: rgba(212, 175, 55, 0.1); color: #D4AF37; border-left: 4px solid #D4AF37; opacity: 1; }
+        .glass-card { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .tb-table th { padding: 16px; font-size: 10px; font-weight: 900; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #334155; text-align: left; }
+        .tb-table td { padding: 16px; font-size: 12px; border-bottom: 1px solid #1e293b; }
+        .msg-bubble { max-width: 75%; padding: 12px 16px; border-radius: 18px; font-size: 13px; line-height: 1.6; }
+        .msg-admin { background: #D4AF37; color: #002147; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .msg-user { background: #334155; color: white; align-self: flex-start; border-bottom-left-radius: 2px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
     </style>
 </head>
 <body class="h-screen flex">
 
-    <!-- Left Sidebar -->
     <aside class="w-72 bg-[#111827] border-r border-slate-800 flex flex-col z-50">
         <div class="p-8 border-b border-slate-800">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center shadow-lg shadow-yellow-900/20">
-                    <i class="fa-solid fa-vault text-[#002147] text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="font-black text-white tracking-tighter text-lg leading-none">TRUST BANK</h1>
-                    <p class="text-[9px] font-black text-[#D4AF37] uppercase tracking-[0.3em] mt-1">Command Center</p>
-                </div>
-            </div>
+            <h1 class="font-black text-white tracking-tighter text-lg leading-none">TRUST BANK</h1>
+            <p class="text-[9px] font-black text-[#D4AF37] uppercase tracking-[0.3em] mt-1">Command Center</p>
         </div>
-
         <nav class="flex-1 p-6 space-y-2 overflow-y-auto">
-            <button onclick="loadTab('dashboard')" class="admin-sidebar-item active w-full flex items-center gap-4 p-4 rounded-xl text-sm font-bold">
-                <i class="fa-solid fa-chart-pie w-5"></i> Overview
-            </button>
-            <button onclick="loadTab('users')" class="admin-sidebar-item w-full flex items-center gap-4 p-4 rounded-xl text-sm font-bold">
-                <i class="fa-solid fa-users w-5"></i> Account Holders
-            </button>
-            <button onclick="loadTab('approvals')" class="admin-sidebar-item w-full flex items-center gap-4 p-4 rounded-xl text-sm font-bold">
-                <i class="fa-solid fa-receipt w-5"></i> Pending Approvals
-            </button>
-            <button onclick="loadTab('kyc')" class="admin-sidebar-item w-full flex items-center gap-4 p-4 rounded-xl text-sm font-bold">
-                <i class="fa-solid fa-id-card w-5"></i> Verification Vault
-            </button>
+            <button onclick="loadTab('dashboard')" class="admin-sidebar-item active w-full flex items-center gap-4 p-4 rounded-xl text-sm font-bold"><i class="fa-solid fa-chart-pie w-5"></i> Overview</button>
+            <button onclick="loadTab('users')" class="admin-sidebar-item w-full flex items-center gap-4 p-4 rounded-xl text-sm font-bold"><i class="fa-solid fa-users w-5"></i> Account Holders</button>
+            <button onclick="loadTab('approvals')" class="admin-sidebar-item w-full flex items-center gap-4 p-4 rounded-xl text-sm font-bold"><i class="fa-solid fa-receipt w-5"></i> Pending Approvals</button>
+            <button onclick="loadTab('kyc')" class="admin-sidebar-item w-full flex items-center gap-4 p-4 rounded-xl text-sm font-bold"><i class="fa-solid fa-id-card w-5"></i> Verification Vault</button>
             <button onclick="loadTab('supportTickets')" class="admin-sidebar-item w-full flex items-center justify-between p-4 rounded-xl text-sm font-bold">
                 <div class="flex items-center gap-4"><i class="fa-solid fa-comment-dots w-5"></i> Live Support</div>
                 <span id="global-unread" class="hidden bg-rose-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black">0</span>
             </button>
-            <button onclick="loadTab('transactions')" class="admin-sidebar-item w-full flex items-center gap-4 p-4 rounded-xl text-sm font-bold">
-                <i class="fa-solid fa-clock-rotate-left w-5"></i> Audit Logs
-            </button>
+            <button onclick="loadTab('transactions')" class="admin-sidebar-item w-full flex items-center gap-4 p-4 rounded-xl text-sm font-bold"><i class="fa-solid fa-clock-rotate-left w-5"></i> Audit Logs</button>
         </nav>
-
         <div class="p-6 border-t border-slate-800">
-            <button id="logout-btn" class="w-full bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white p-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
-                Terminate Session
-            </button>
+            <button id="logout-btn" class="w-full bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white p-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Terminate Session</button>
         </div>
     </aside>
 
-    <!-- Main Content Area -->
     <main class="flex-1 flex flex-col relative">
-        <!-- Top Bar -->
         <header class="h-24 bg-[#111827]/80 backdrop-blur-md border-b border-slate-800 flex justify-between items-center px-10 sticky top-0 z-40">
-            <h2 id="tab-title" class="font-black uppercase tracking-[0.2em] text-sm text-white">Command Dashboard</h2>
-            
+            <h2 id="tab-title" class="font-black uppercase tracking-[0.2em] text-sm text-white">Dashboard</h2>
             <div class="flex items-center gap-6">
-                <div class="relative w-80">
-                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                    <input type="text" id="admin-search" placeholder="Search accounts, UID, or records..." class="w-full bg-slate-900 border border-slate-700 pl-12 pr-4 text-xs rounded-2xl h-12 text-white outline-none focus:border-[#D4AF37] transition-all">
-                </div>
-                <div class="flex items-center gap-3 border-l border-slate-700 pl-6">
-                    <div class="text-right">
-                        <p class="text-[10px] font-black text-white uppercase">System Administrator</p>
-                        <p class="text-[9px] font-bold text-emerald-500 uppercase">Live Server Active</p>
-                    </div>
-                    <div class="w-10 h-10 bg-slate-800 rounded-full border border-slate-700 flex items-center justify-center">
-                        <i class="fa-solid fa-user-shield text-slate-400"></i>
-                    </div>
-                </div>
+                <input type="text" id="admin-search" placeholder="Search..." class="bg-slate-900 border border-slate-700 px-6 py-2.5 text-xs rounded-2xl text-white outline-none focus:border-[#D4AF37]">
+                <div class="w-10 h-10 bg-slate-800 rounded-full border border-slate-700 flex items-center justify-center text-slate-400"><i class="fa-solid fa-user-shield"></i></div>
             </div>
         </header>
-
-        <!-- Dynamic Content -->
         <section id="tab-content" class="p-10 overflow-y-auto flex-1"></section>
     </main>
 
     <!-- KYC Viewer Modal -->
     <div id="kyc-modal" class="hidden fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-10 backdrop-blur-xl">
         <div class="bg-[#1e293b] w-full max-w-5xl rounded-[2.5rem] p-12 border border-slate-700 shadow-2xl relative animate-fade">
-            <button onclick="closeModal('kyc-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors">
-                <i class="fa-solid fa-xmark text-3xl"></i>
-            </button>
-            <div class="mb-10">
-                <h3 class="font-black text-2xl text-[#D4AF37]">Identity Audit</h3>
-                <p id="kyc-user-info" class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-2"></p>
-            </div>
+            <button onclick="closeModal('kyc-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-white"><i class="fa-solid fa-xmark text-3xl"></i></button>
+            <div class="mb-10"><h3 class="font-black text-2xl text-[#D4AF37]">Identity Audit</h3><p id="kyc-user-info" class="text-xs text-slate-400 uppercase tracking-widest mt-2"></p></div>
             <div class="grid grid-cols-3 gap-8">
-                <div class="space-y-3">
-                    <label class="text-[10px] font-black uppercase text-slate-500 ml-2">Primary ID Front</label>
-                    <img id="img-front" src="" class="w-full h-64 object-cover rounded-3xl border border-slate-700 shadow-inner">
-                </div>
-                <div class="space-y-3">
-                    <label class="text-[10px] font-black uppercase text-slate-500 ml-2">Primary ID Back</label>
-                    <img id="img-back" src="" class="w-full h-64 object-cover rounded-3xl border border-slate-700 shadow-inner">
-                </div>
-                <div class="space-y-3">
-                    <label class="text-[10px] font-black uppercase text-slate-500 ml-2">Live Verification Selfie</label>
-                    <img id="img-selfie" src="" class="w-full h-64 object-cover rounded-3xl border border-slate-700 shadow-inner">
-                </div>
+                <div><label class="text-[10px] font-black uppercase text-slate-500 block mb-2">Front</label><img id="img-front" class="w-full h-64 object-cover rounded-3xl border border-slate-700"></div>
+                <div><label class="text-[10px] font-black uppercase text-slate-500 block mb-2">Back</label><img id="img-back" class="w-full h-64 object-cover rounded-3xl border border-slate-700"></div>
+                <div><label class="text-[10px] font-black uppercase text-slate-500 block mb-2">Selfie</label><img id="img-selfie" class="w-full h-64 object-cover rounded-3xl border border-slate-700"></div>
             </div>
             <div class="mt-12 flex gap-4">
-                <button id="kyc-approve" class="flex-1 bg-emerald-600 hover:bg-emerald-500 p-5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all">Verify Credentials</button>
-                <button id="kyc-reject" class="flex-1 bg-rose-600 hover:bg-rose-500 p-5 rounded-2xl font-black uppercase text-xs tracking-widest transition-all">Deny Documents</button>
+                <button id="kyc-approve" class="flex-1 bg-emerald-600 p-5 rounded-2xl font-black uppercase text-xs">Verify Credentials</button>
+                <button id="kyc-reject" class="flex-1 bg-rose-600 p-5 rounded-2xl font-black uppercase text-xs">Deny Documents</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { auth, db, ADMIN_EMAIL } from './firebase-config.js';
-        import { collection, query, onSnapshot, doc, updateDoc, getDocs, where, addDoc, setDoc, increment, orderBy, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { collection, query, onSnapshot, doc, updateDoc, getDocs, where, addDoc, increment, orderBy, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { formatCurrency, formatDate } from './utils.js';
 
-        // State Management
         let currentTab = 'dashboard';
         let activeChatUid = null;
+        let messagesUnsubscribe = null;
 
-        // Security Check
         auth.onAuthStateChanged(user => {
             if (!user || user.email !== ADMIN_EMAIL) window.location.href = "login.html";
             renderData();
         });
 
-        document.getElementById('logout-btn').onclick = () => auth.signOut();
-
         window.loadTab = (tab) => {
             currentTab = tab;
+            if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
             document.querySelectorAll('.admin-sidebar-item').forEach(b => {
                 b.classList.toggle('active', b.getAttribute('onclick').includes(tab));
             });
-            document.getElementById('tab-title').innerText = tab.replace(/([A-Z])/g, ' $1');
+            document.getElementById('tab-title').innerText = tab.toUpperCase();
             renderData();
         };
 
         window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
 
-        const renderData = () => {
+        const renderData = async () => {
             const container = document.getElementById('tab-content');
-            container.innerHTML = `<div class="flex items-center justify-center py-40 text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-4xl mr-4"></i><span class="font-black uppercase text-xs tracking-widest">Accessing Secure Records...</span></div>`;
+            container.innerHTML = `<div class="flex items-center justify-center py-40 text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-4xl mr-4"></i> Accessing Secure Records...</div>`;
 
-            // --- TAB: DASHBOARD ---
             if (currentTab === 'dashboard') {
+                const uSnap = await getDocs(collection(db, "users"));
+                const aSnap = await getDocs(collection(db, "accounts"));
+                let total = 0; aSnap.forEach(d => total += (d.data().availableBalance || 0));
+                
                 container.innerHTML = `
-                    <div class="grid grid-cols-4 gap-6 mb-10 animate-fade">
+                    <div class="grid grid-cols-4 gap-6 animate-fade">
                         <div class="glass-card p-8 rounded-3xl">
-                            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Total Liquidity</p>
-                            <h3 class="text-3xl font-black text-white" id="stat-liquidity">$0.00</h3>
+                            <p class="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">Total Liquidity</p>
+                            <h3 class="text-3xl font-black text-white">${formatCurrency(total)}</h3>
                         </div>
                         <div class="glass-card p-8 rounded-3xl">
-                            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Total Active Users</p>
-                            <h3 class="text-3xl font-black text-white" id="stat-users">0</h3>
+                            <p class="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">Account Holders</p>
+                            <h3 class="text-3xl font-black text-white">${uSnap.size}</h3>
                         </div>
-                        <div class="glass-card p-8 rounded-3xl">
-                            <p class="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-4">Pending Payouts</p>
-                            <h3 class="text-3xl font-black text-white" id="stat-pending-out">0</h3>
-                        </div>
-                        <div class="glass-card p-8 rounded-3xl">
-                            <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">Pending Deposits</p>
-                            <h3 class="text-3xl font-black text-white" id="stat-pending-in">0</h3>
-                        </div>
-                    </div>
-                `;
-                // Logic to calculate stats would go here
+                    </div>`;
             }
 
-            // --- TAB: USERS ---
             if (currentTab === 'users') {
                 onSnapshot(query(collection(db, "users"), orderBy("createdAt", "desc")), async (snap) => {
                     const accs = await getDocs(collection(db, "accounts"));
                     const accMap = {}; accs.forEach(a => accMap[a.data().ownerUid] = a.data());
-                    
-                    container.innerHTML = `
-                        <div class="glass-card rounded-3xl overflow-hidden animate-fade">
-                            <table class="tb-table w-full">
-                                <thead>
-                                    <tr>
-                                        <th>Date Enrolled</th>
-                                        <th>Legal Name & Email</th>
-                                        <th>Account ID</th>
-                                        <th>Balance</th>
-                                        <th>KYC Status</th>
-                                        <th class="text-right">Management</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${snap.docs.map(uDoc => {
-                                        const u = uDoc.data(); 
-                                        const a = accMap[u.uid] || {};
-                                        return `
-                                            <tr class="hover:bg-white/5 transition-colors">
-                                                <td class="text-slate-500 font-bold">${formatDate(u.createdAt)}</td>
-                                                <td>
-                                                    <p class="font-black text-white">${u.fullName}</p>
-                                                    <p class="text-[10px] text-slate-500 uppercase font-bold">${u.email}</p>
-                                                </td>
-                                                <td class="font-mono text-slate-400">${a.accountNumber || '---'}</td>
-                                                <td class="text-[#D4AF37] font-black">${formatCurrency(a.availableBalance || 0)}</td>
-                                                <td>
-                                                    <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.kycStatus === 'VERIFIED' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-800 text-slate-400'}">
-                                                        ${u.kycStatus || 'NONE'}
-                                                    </span>
-                                                </td>
-                                                <td class="text-right">
-                                                    <button onclick="adjustBalance('${u.uid}', '${u.fullName}')" class="text-[9px] font-black text-[#D4AF37] uppercase hover:underline">Manual Credit/Debit</button>
-                                                </td>
-                                            </tr>
-                                        `;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>`;
+                    container.innerHTML = `<div class="glass-card rounded-3xl overflow-hidden animate-fade">
+                        <table class="tb-table w-full">
+                            <thead><tr><th>User</th><th>Account ID</th><th>Balance</th><th>KYC Status</th><th class="text-right">Management</th></tr></thead>
+                            <tbody>${snap.docs.map(uDoc => {
+                                const u = uDoc.data(); const a = accMap[u.uid] || {};
+                                return `<tr class="hover:bg-white/5">
+                                    <td><p class="font-black text-white">${u.fullName}</p><p class="text-[10px] text-slate-500 uppercase font-bold">${u.email}</p></td>
+                                    <td class="font-mono text-slate-400">${a.accountNumber || '---'}</td>
+                                    <td class="text-[#D4AF37] font-black">${formatCurrency(a.availableBalance || 0)}</td>
+                                    <td><span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.kycStatus === 'VERIFIED' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-800 text-slate-400'}">${u.kycStatus || 'NONE'}</span></td>
+                                    <td class="text-right"><button onclick="adjustBalance('${u.uid}', '${u.fullName}')" class="text-[9px] font-black text-[#D4AF37] uppercase hover:underline">Manual Adjust</button></td>
+                                </tr>`;
+                            }).join('')}</tbody></table></div>`;
                 });
             }
 
-            // --- TAB: APPROVALS ---
-            if (currentTab === 'approvals') {
-                container.innerHTML = `<div id="approval-stack" class="grid grid-cols-2 gap-6 animate-fade"></div>`;
-                const types = ['deposits', 'withdrawals', 'transfers'];
-                types.forEach(type => {
-                    onSnapshot(query(collection(db, type), where("status", "==", "PENDING")), snap => {
-                        const stack = document.getElementById('approval-stack');
-                        snap.docs.forEach(dDoc => {
-                            const d = dDoc.data();
-                            stack.innerHTML += `
-                                <div class="glass-card p-8 rounded-[2rem] flex justify-between items-center border-l-4 ${type === 'deposits' ? 'border-emerald-500' : 'border-rose-500'}">
-                                    <div>
-                                        <p class="text-[10px] font-black text-[#D4AF37] uppercase mb-2 tracking-widest">${type.slice(0,-1)} Request</p>
-                                        <h3 class="text-2xl font-black text-white">${formatCurrency(d.amount)}</h3>
-                                        <p class="text-[10px] text-slate-500 font-bold mt-2 uppercase">UID: ${d.uid.slice(0,10)}... | ${d.method || d.recipientAcc || 'P2P'}</p>
-                                    </div>
-                                    <div class="flex gap-3">
-                                        <button onclick="processTx('${type}', '${dDoc.id}', 'APPROVED')" class="bg-emerald-600 hover:bg-emerald-500 w-12 h-12 rounded-xl text-white shadow-lg"><i class="fa-solid fa-check"></i></button>
-                                        <button onclick="processTx('${type}', '${dDoc.id}', 'DECLINED')" class="bg-rose-600 hover:bg-rose-500 w-12 h-12 rounded-xl text-white shadow-lg"><i class="fa-solid fa-xmark"></i></button>
-                                    </div>
-                                </div>`;
-                        });
-                    });
-                });
-            }
-
-            // --- TAB: SUPPORT CRM (REAL-TIME) ---
             if (currentTab === 'supportTickets') {
-                container.innerHTML = `
-                    <div class="grid grid-cols-12 gap-6 h-[70vh] animate-fade">
-                        <div class="col-span-4 bg-[#111827] rounded-[2rem] border border-slate-800 flex flex-col overflow-hidden">
-                            <div class="p-6 border-b border-slate-800 bg-slate-900/50">
-                                <h3 class="font-black text-[10px] uppercase text-slate-400 tracking-[0.2em]">Live Conversation Feed</h3>
-                            </div>
-                            <div id="admin-user-list" class="flex-1 overflow-y-auto"></div>
-                        </div>
-                        <div id="admin-chat-window" class="col-span-8 bg-[#111827] rounded-[2rem] border border-slate-800 flex flex-col items-center justify-center text-slate-700 relative overflow-hidden">
-                            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent"></div>
-                            <i class="fa-solid fa-headset text-6xl mb-6 opacity-20"></i>
-                            <p class="text-xs font-black uppercase tracking-widest opacity-40">Ready for Live Support</p>
-                        </div>
+                container.innerHTML = `<div class="grid grid-cols-12 gap-6 h-[70vh] animate-fade">
+                    <div class="col-span-4 bg-[#111827] rounded-[2rem] border border-slate-800 flex flex-col overflow-hidden">
+                        <div class="p-6 border-b border-slate-800 bg-slate-900/50"><h3 class="font-black text-[10px] uppercase text-slate-400 tracking-widest">Inboxes</h3></div>
+                        <div id="admin-user-list" class="flex-1 overflow-y-auto"></div>
                     </div>
-                `;
+                    <div id="admin-chat-window" class="col-span-8 bg-[#111827] rounded-[2rem] border border-slate-800 flex flex-col items-center justify-center text-slate-700 relative overflow-hidden">
+                        <i class="fa-solid fa-headset text-6xl mb-6 opacity-20"></i><p class="text-xs font-black uppercase tracking-widest opacity-40">Select conversation to respond</p>
+                    </div></div>`;
 
                 onSnapshot(query(collection(db, "supportTickets"), orderBy("lastTimestamp", "desc")), snap => {
                     const listCont = document.getElementById('admin-user-list');
+                    if (!listCont) return;
                     listCont.innerHTML = snap.docs.map(tDoc => {
                         const t = tDoc.data();
-                        const activeClass = activeChatUid === tDoc.id ? 'bg-slate-800 border-l-4 border-[#D4AF37]' : '';
-                        return `
-                            <div onclick="adminOpenChat('${tDoc.id}', '${t.userName}')" class="p-6 border-b border-slate-800 cursor-pointer hover:bg-slate-800 transition-all flex justify-between items-center ${activeClass}">
-                                <div class="flex-1 min-w-0 mr-4">
-                                    <p class="font-black text-sm text-white truncate">${t.userName || 'Unknown Client'}</p>
-                                    <p class="text-[10px] text-slate-500 font-bold truncate mt-1">${t.lastMessage || '...'}</p>
-                                </div>
-                                ${t.unreadAdminCount > 0 ? `<span class="bg-rose-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse">${t.unreadAdminCount}</span>` : '<i class="fa-solid fa-chevron-right text-slate-700 text-xs"></i>'}
-                            </div>`;
+                        const isUnread = t.unreadAdminCount > 0;
+                        return `<div onclick="adminOpenChat('${tDoc.id}', '${t.userName}')" class="p-6 border-b border-slate-800 cursor-pointer hover:bg-slate-800 transition-all flex justify-between items-center ${activeChatUid === tDoc.id ? 'bg-slate-800 border-l-4 border-[#D4AF37]' : ''}">
+                            <div class="flex-1 min-w-0 mr-4">
+                                <p class="font-black text-sm ${isUnread ? 'text-white' : 'text-slate-400'} truncate">${t.userName || 'Client'}</p>
+                                <p class="text-[10px] text-slate-500 font-bold truncate mt-1">${t.lastMessage || '...'}</p>
+                            </div>
+                            ${isUnread ? `<span class="bg-rose-600 text-white text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse">${t.unreadAdminCount}</span>` : ''}
+                        </div>`;
                     }).join('');
                 });
             }
 
-            // --- TAB: AUDIT LOGS ---
             if (currentTab === 'transactions') {
                 onSnapshot(query(collection(db, "transactions"), orderBy("timestamp", "desc")), snap => {
                     container.innerHTML = `
                         <div class="glass-card rounded-3xl overflow-hidden animate-fade">
                             <table class="tb-table w-full">
-                                <thead>
-                                    <tr>
-                                        <th>Timestamp</th>
-                                        <th>Transaction Type</th>
-                                        <th>User UID</th>
-                                        <th>Flow</th>
-                                        <th>Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${snap.docs.map(tDoc => {
-                                        const t = tDoc.data();
-                                        return `
-                                            <tr class="hover:bg-white/5">
-                                                <td class="text-slate-500 font-bold">${formatDate(t.timestamp)}</td>
-                                                <td class="font-black uppercase text-[10px] text-[#D4AF37]">${t.type}</td>
-                                                <td class="font-mono text-slate-500">${t.uid.slice(0,12)}...</td>
-                                                <td>
-                                                    <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase ${t.direction === 'credit' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}">
-                                                        ${t.direction}
-                                                    </span>
-                                                </td>
-                                                <td class="font-black text-white">${formatCurrency(t.amount)}</td>
-                                            </tr>`;
-                                    }).join('')}
-                                </tbody>
+                                <thead><tr><th>Timestamp</th><th>Type</th><th>UID</th><th>Direction</th><th>Amount</th></tr></thead>
+                                <tbody>${snap.docs.map(tDoc => {
+                                    const t = tDoc.data();
+                                    return `<tr class="hover:bg-white/5">
+                                        <td class="text-slate-500 font-bold">${formatDate(t.timestamp)}</td>
+                                        <td class="font-black uppercase text-[10px] text-[#D4AF37]">${t.type}</td>
+                                        <td class="font-mono text-slate-500">${t.uid ? t.uid.slice(0,10) : '---'}...</td>
+                                        <td><span class="px-2 py-0.5 rounded text-[8px] font-black uppercase ${t.direction === 'credit' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}">${t.direction}</span></td>
+                                        <td class="font-black text-white">${formatCurrency(t.amount)}</td>
+                                    </tr>`;
+                                }).join('')}</tbody>
                             </table>
                         </div>`;
                 });
             }
         };
 
-        // --- GLOBAL SUPPORT LOGIC ---
         window.adminOpenChat = (uid, name) => {
+            if (messagesUnsubscribe) messagesUnsubscribe();
             activeChatUid = uid;
-            const windowCont = document.getElementById('admin-chat-window');
-            windowCont.innerHTML = `
-                <div class="flex flex-col h-full w-full bg-[#111827]">
-                    <div class="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-[#D4AF37] text-xs font-black">${name.charAt(0)}</div>
-                            <div>
-                                <h4 class="font-black text-white text-xs uppercase tracking-widest">${name}</h4>
-                                <p class="text-[9px] font-bold text-emerald-500 uppercase">Live Session Active</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="admin-msg-flow" class="flex-1 p-8 overflow-y-auto flex flex-col gap-4 bg-slate-900/10"></div>
-                    <div class="p-6 border-t border-slate-800 bg-slate-900/50 flex gap-3">
-                        <input type="text" id="admin-reply-input" placeholder="Secure response..." class="flex-1 bg-slate-800 border border-slate-700 rounded-2xl px-6 text-xs text-white outline-none focus:border-[#D4AF37]">
-                        <button onclick="adminSendReply('${uid}')" class="bg-[#D4AF37] text-[#002147] px-8 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all">Send</button>
-                    </div>
-                </div>`;
 
-            onSnapshot(query(collection(db, "supportTickets", uid, "messages"), orderBy("timestamp", "asc")), snap => {
+            const windowCont = document.getElementById('admin-chat-window');
+            windowCont.innerHTML = `<div class="flex flex-col h-full w-full bg-[#111827]">
+                <div class="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+                    <h4 class="font-black text-white text-xs uppercase tracking-widest">${name}</h4>
+                </div>
+                <div id="admin-msg-flow" class="flex-1 p-8 overflow-y-auto flex flex-col gap-4"></div>
+                <div class="p-6 border-t border-slate-800 flex gap-3">
+                    <input type="text" id="admin-reply-input" placeholder="Type response..." class="flex-1 bg-slate-800 border border-slate-700 rounded-2xl px-6 text-xs text-white outline-none">
+                    <button id="admin-send-btn" onclick="adminSendReply('${uid}')" class="bg-[#D4AF37] text-[#002147] px-8 rounded-2xl font-black uppercase text-[10px]">Send</button>
+                </div></div>`;
+
+            updateDoc(doc(db, "supportTickets", uid), { unreadAdminCount: 0 }).catch(() => {});
+
+            const messagesQuery = query(collection(db, "supportTickets", uid, "messages"), orderBy("timestamp", "asc"));
+            messagesUnsubscribe = onSnapshot(messagesQuery, snap => {
                 const flow = document.getElementById('admin-msg-flow');
                 if(!flow) return;
                 flow.innerHTML = snap.docs.map(d => {
-                    const m = d.data();
-                    const isAdmin = m.senderRole === 'admin';
-                    return `
-                        <div class="flex flex-col ${isAdmin ? 'items-end' : 'items-start'}">
-                            <div class="msg-bubble ${isAdmin ? 'msg-admin' : 'msg-user'} shadow-xl">
-                                ${m.text}
-                            </div>
-                            <span class="text-[8px] font-bold text-slate-600 uppercase mt-2 px-2">${isAdmin ? 'Admin' : 'Client'} • ${formatDate(m.timestamp)}</span>
-                        </div>`;
+                    const m = d.data(); const isAdmin = m.senderRole === 'admin';
+                    return `<div class="flex flex-col ${isAdmin ? 'items-end' : 'items-start'}">
+                        <div class="msg-bubble ${isAdmin ? 'msg-admin' : 'msg-user'} shadow-xl">${m.text}</div>
+                        <span class="text-[8px] font-bold text-slate-600 uppercase mt-2 px-2">${isAdmin ? 'Admin' : 'Client'} • ${m.timestamp ? formatDate(m.timestamp) : 'Sending...'}</span>
+                    </div>`;
                 }).join('');
                 flow.scrollTop = flow.scrollHeight;
-                updateDoc(doc(db, "supportTickets", uid), { unreadAdminCount: 0 });
             });
         };
 
         window.adminSendReply = async (uid) => {
             const input = document.getElementById('admin-reply-input');
+            const btn = document.getElementById('admin-send-btn');
             const text = input.value.trim();
-            if (!text) return;
+            if (!text || btn.disabled) return;
+            
+            btn.disabled = true;
             input.value = "";
-            await addDoc(collection(db, "supportTickets", uid, "messages"), { text, senderRole: 'admin', timestamp: serverTimestamp() });
-            await updateDoc(doc(db, "supportTickets", uid), { lastMessage: text, lastTimestamp: serverTimestamp(), unreadUserCount: increment(1) });
+            try {
+                await addDoc(collection(db, "supportTickets", uid, "messages"), { 
+                    text, senderRole: 'admin', timestamp: serverTimestamp() 
+                });
+                await updateDoc(doc(db, "supportTickets", uid), { 
+                    lastMessage: text, lastTimestamp: serverTimestamp(), unreadUserCount: increment(1) 
+                });
+            } catch (err) { console.error(err); }
+            finally { btn.disabled = false; }
         };
 
-        // --- TX PROCESSING ---
-        window.processTx = async (coll, id, status) => {
-            const docRef = doc(db, coll, id);
-            const snap = await getDoc(docRef);
-            const data = snap.data();
-
-            if (status === 'DECLINED') {
-                const reason = prompt("Enter decline reason:");
-                if (!reason) return;
-                await updateDoc(docRef, { status: 'DECLINED', declineReason: reason });
-                return renderData();
-            }
-
-            const accQ = await getDocs(query(collection(db, "accounts"), where("ownerUid", "==", data.uid)));
+        window.adjustBalance = async (uid, name) => {
+            const amt = prompt(`Adjust Balance for ${name}:\n(Positive for credit, Negative for debit)`);
+            if (!amt || isNaN(amt)) return;
+            const accQ = await getDocs(query(collection(db, "accounts"), where("ownerUid", "==", uid)));
             if (accQ.empty) return;
-            
             const accRef = doc(db, "accounts", accQ.docs[0].id);
-            let change = data.amount;
-            if (coll === 'withdrawals' || coll === 'transfers') change = -data.amount;
-
-            await updateDoc(accRef, { availableBalance: increment(change), totalBalance: increment(change) });
-            await updateDoc(docRef, { status: 'APPROVED' });
-            
-            await addDoc(collection(db, "transactions"), {
-                uid: data.uid, amount: data.amount, direction: change > 0 ? 'credit' : 'debit',
-                type: coll.toUpperCase(), timestamp: serverTimestamp()
-            });
-            renderData();
+            await updateDoc(accRef, { availableBalance: increment(parseFloat(amt)), totalBalance: increment(parseFloat(amt)) });
         };
 
-        // --- KYC LOGIC ---
-        window.viewKYC = async (uid) => {
-            const kSnap = await getDoc(doc(db, "kyc", uid));
-            const k = kSnap.data();
-            document.getElementById('img-front').src = k.documentFront;
-            document.getElementById('img-back').src = k.documentBack;
-            document.getElementById('img-selfie').src = k.documentSelfie;
-            document.getElementById('kyc-user-info').innerText = `DOC: ${k.documentType} | UID: ${uid}`;
-            document.getElementById('kyc-modal').classList.remove('hidden');
-
-            document.getElementById('kyc-approve').onclick = async () => {
-                await updateDoc(doc(db, "kyc", uid), { status: 'VERIFIED' });
-                await updateDoc(doc(db, "users", uid), { kycStatus: 'VERIFIED' });
-                closeModal('kyc-modal');
-                renderData();
-            };
-            document.getElementById('kyc-reject').onclick = async () => {
-                const r = prompt("Reason for rejection:");
-                await updateDoc(doc(db, "kyc", uid), { status: 'DECLINED', declineReason: r });
-                await updateDoc(doc(db, "users", uid), { kycStatus: 'DECLINED' });
-                closeModal('kyc-modal');
-                renderData();
-            };
-        };
-
-        // Global Unread Badge Listener
+        // Global Unread Notifications Badge for sidebar
         onSnapshot(collection(db, "supportTickets"), snap => {
             let total = 0;
             snap.docs.forEach(d => total += (d.data().unreadAdminCount || 0));
             const badge = document.getElementById('global-unread');
-            if(total > 0) { badge.innerText = total; badge.classList.remove('hidden'); }
-            else { badge.classList.add('hidden'); }
+            if(badge) {
+                if(total > 0) { badge.innerText = total; badge.classList.remove('hidden'); }
+                else { badge.classList.add('hidden'); }
+            }
         });
 
+        document.getElementById('logout-btn').onclick = () => auth.signOut();
         loadTab('dashboard');
     </script>
 </body>
