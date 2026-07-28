@@ -63,17 +63,22 @@
             const userSnap = await getDoc(userRef);
 
             if (!userSnap.exists()) {
+                // New user via Google: Generate 10-digit ID
                 const accNum = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+                
                 await setDoc(userRef, {
                     uid: user.uid,
                     fullName: user.displayName || "New User",
                     email: user.email,
+                    accountNumber: accNum,
                     authProvider: "google",
                     role: "customer",
                     status: "active",
                     kycStatus: "NONE",
+                    balance: 0,
                     createdAt: serverTimestamp()
                 });
+
                 await setDoc(doc(db, "accounts", accNum), {
                     accountNumber: accNum,
                     ownerUid: user.uid,
@@ -82,8 +87,10 @@
                     totalBalance: 0,
                     savingsBalance: 0,
                     accountType: "Individual",
+                    status: "active",
                     createdAt: serverTimestamp()
                 });
+
                 window.location.href = "set-pin.html";
             } else {
                 const data = userSnap.data();
