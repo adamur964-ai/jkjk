@@ -25,7 +25,7 @@
         /* --- STANDARD OF 3: FLOATING CHAT DOCK --- */
         #user-chat-dock {
             position: fixed;
-            bottom: 90px; /* Sits above bottom nav */
+            bottom: 90px; 
             right: 20px;
             width: 320px;
             height: 450px;
@@ -56,8 +56,6 @@
             <div class="ticker-item">USD/JPY <span id="usd-jpy">151.4 ▲</span></div>
             <div class="ticker-item">BTC/USD <span id="btc-usd">64,231 ▲</span></div>
             <div class="ticker-item">GOLD/OZ <span id="gold-oz">2,320 ▲</span></div>
-            <div class="ticker-item">EUR/USD <span id="eur-usd2">0.92 ▲</span></div>
-            <div class="ticker-item">GBP/USD <span id="gbp-usd2">1.27 ▼</span></div>
         </div>
     </div>
 
@@ -138,7 +136,7 @@
                 </button>
             </div>
 
-            <!-- Exchange & Activity Sections (Rest of your code remains here) -->
+            <!-- Activity -->
             <section>
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[#002147]">Recent Activity</h3>
@@ -149,7 +147,7 @@
         </div>
     </main>
 
-    <!-- STANDARD OF 3: FLOATING CHAT DOCK UI -->
+    <!-- CHAT DOCK -->
     <div id="user-chat-dock">
         <div class="chat-header">
             <span class="text-[10px] font-black uppercase tracking-widest">Live Concierge</span>
@@ -181,17 +179,23 @@
             document.getElementById('header-container').innerHTML = renderHeader(`Trust Bank`);
             document.getElementById('nav-container').innerHTML = renderBottomNav('dashboard');
 
-            // --- USER DATA & KYC BADGE ---
+            // --- USER DATA & ACCOUNT ID DISPLAY ---
             onSnapshot(doc(db, "users", user.uid), (snap) => {
                 const data = snap.data();
                 if(data) {
                     userData = data;
                     document.getElementById('user-name-display').innerText = `Hello, ${data.fullName.split(' ')[0]}`;
+                    
+                    // Display Account ID instantly from user record
+                    if(data.accountNumber) {
+                        document.getElementById('account-id-display').innerText = data.accountNumber;
+                    }
+
                     const badge = document.getElementById('kyc-badge');
                     const status = data.kycStatus || 'NONE';
                     
                     if (status === 'VERIFIED') {
-                        badge.className = "flex items-center justify-center w-5 h-5 bg-emerald-500 text-white rounded-full text-[10px] shadow-lg shadow-emerald-500/20";
+                        badge.className = "flex items-center justify-center w-5 h-5 bg-emerald-500 text-white rounded-full text-[10px]";
                         badge.innerHTML = `<i class="fa-solid fa-check"></i>`;
                         badge.classList.remove('hidden');
                     } else if (status === 'PENDING') {
@@ -202,8 +206,7 @@
                 }
             });
 
-            // --- STANDARD OF 3: CHAT LISTENERS ---
-            // 1. Listen for Unread Messages
+            // Chat & Bank Data
             onSnapshot(doc(db, "supportTickets", user.uid), snap => {
                 const ticket = snap.data();
                 const badge = document.getElementById('user-unread-count');
@@ -213,7 +216,6 @@
                 } else { badge.classList.add('hidden'); }
             });
 
-            // 2. Listen for Message Stream
             onSnapshot(query(collection(db, "supportTickets", user.uid, "messages"), orderBy("timestamp", "asc")), snap => {
                 const flow = document.getElementById('user-msg-flow');
                 flow.innerHTML = snap.docs.map(d => {
@@ -223,13 +225,11 @@
                 flow.scrollTop = flow.scrollHeight;
             });
 
-            // Standard Data Listeners (Balance & Transactions)
             onSnapshot(query(collection(db, "accounts"), where("ownerUid", "==", user.uid)), (snap) => {
                 if (!snap.empty) {
                     const acc = snap.docs[0].data();
                     document.getElementById('balance-main').innerText = formatCurrency(acc.availableBalance, acc.currency);
                     document.getElementById('balance-total').innerText = formatCurrency(acc.totalBalance, acc.currency);
-                    document.getElementById('account-id-display').innerText = acc.accountNumber;
                 }
             });
 
@@ -249,13 +249,11 @@
             });
         });
 
-        // --- STANDARD OF 3: CHAT FUNCTIONS ---
         window.toggleUserChat = () => {
             const dock = document.getElementById('user-chat-dock');
             const isOpening = dock.style.display !== 'flex';
             dock.style.display = isOpening ? 'flex' : 'none';
             if (isOpening && userUid) {
-                // Clear unread count when user opens chat
                 updateDoc(doc(db, "supportTickets", userUid), { unreadUserCount: 0 }).catch(() => {});
             }
         };
@@ -265,7 +263,6 @@
             const text = input.value.trim();
             if (!text || !userUid) return;
             input.value = "";
-
             const ticketRef = doc(db, "supportTickets", userUid);
             await setDoc(ticketRef, {
                 uid: userUid,
@@ -275,24 +272,10 @@
                 unreadAdminCount: increment(1),
                 status: 'OPEN'
             }, { merge: true });
-
             await addDoc(collection(db, "supportTickets", userUid, "messages"), {
                 text, senderRole: 'user', timestamp: serverTimestamp()
             });
         };
-
-        // Live Ticker Logic
-        setInterval(() => {
-            ['eur-usd', 'gbp-usd', 'usd-jpy', 'btc-usd'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el){
-                    const val = parseFloat(el.innerText);
-                    const up = Math.random() > 0.5;
-                    el.innerHTML = `${(up ? val + 0.01 : val - 0.01).toFixed(2)} ${up ? '▲' : '▼'}`;
-                    el.className = up ? 'text-emerald-400' : 'text-rose-400';
-                }
-            });
-        }, 5000);
     </script>
 </body>
 </html>
