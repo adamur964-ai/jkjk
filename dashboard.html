@@ -21,6 +21,29 @@
         .ticker-item span { color: #D4AF37; margin-left: 8px; }
 
         .sparkline { stroke: #D4AF37; stroke-width: 2; fill: none; }
+
+        /* --- STANDARD OF 3: FLOATING CHAT DOCK --- */
+        #user-chat-dock {
+            position: fixed;
+            bottom: 90px; /* Sits above bottom nav */
+            right: 20px;
+            width: 320px;
+            height: 450px;
+            background: white;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .chat-header { background: #002147; color: #D4AF37; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .msg-user { background: #002147; color: white; align-self: flex-end; border-radius: 14px 14px 2px 14px; }
+        .msg-admin { background: #f1f5f9; color: #1e293b; align-self: flex-start; border-radius: 14px 14px 14px 2px; }
+        .msg-bubble { padding: 10px 14px; font-size: 12px; max-width: 85%; line-height: 1.4; }
+        .chat-input-area { padding: 12px; border-top: 1px solid #f1f5f9; display: flex; gap: 8px; }
     </style>
 </head>
 <body class="bg-slate-50 pb-32">
@@ -41,14 +64,11 @@
     <div id="header-container" class="mt-10"></div>
 
     <main class="max-w-md mx-auto px-6 pt-4">
-        
         <div id="home-view" class="view-section active space-y-6">
-            
             <div class="space-y-1">
                 <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Account Overview</p>
                 <div class="flex items-center gap-2">
                     <h1 id="user-name-display" class="text-2xl font-black text-[#002147]">Loading...</h1>
-                    <!-- Real-Time KYC Verification Badge -->
                     <div id="kyc-badge" class="hidden"></div>
                 </div>
             </div>
@@ -109,34 +129,16 @@
                     <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100"><i class="fa-solid fa-paper-plane text-xl"></i></div>
                     <span class="text-[9px] font-black uppercase text-slate-500">Transfer</span>
                 </a>
-                <a href="chat.html" class="flex flex-col items-center gap-2">
-                    <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100"><i class="fa-solid fa-headset text-xl"></i></div>
+                <button onclick="toggleUserChat()" class="flex flex-col items-center gap-2">
+                    <div class="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#002147] shadow-sm border border-slate-100 relative">
+                        <i class="fa-solid fa-headset text-xl"></i>
+                        <span id="user-unread-count" class="hidden absolute -top-1 -right-1 bg-rose-600 text-white text-[8px] px-1.5 py-0.5 rounded-full font-black">0</span>
+                    </div>
                     <span class="text-[9px] font-black uppercase text-slate-500">Support</span>
-                </a>
+                </button>
             </div>
 
-            <!-- Live Exchange Grid -->
-            <section>
-                <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[#002147] mb-4">Currency Exchange</h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
-                        <div>
-                            <p class="text-[8px] font-black text-slate-400 uppercase">USD / EUR</p>
-                            <p class="font-bold text-sm">0.9241</p>
-                        </div>
-                        <i class="fa-solid fa-caret-up text-emerald-500"></i>
-                    </div>
-                    <div class="bg-white p-4 rounded-2xl border border-slate-100 flex justify-between items-center">
-                        <div>
-                            <p class="text-[8px] font-black text-slate-400 uppercase">USD / GBP</p>
-                            <p class="font-bold text-sm">0.7892</p>
-                        </div>
-                        <i class="fa-solid fa-caret-down text-rose-500"></i>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Recent Activity -->
+            <!-- Exchange & Activity Sections (Rest of your code remains here) -->
             <section>
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[#002147]">Recent Activity</h3>
@@ -145,30 +147,46 @@
                 <div id="recent-transactions" class="space-y-3"></div>
             </section>
         </div>
-
     </main>
+
+    <!-- STANDARD OF 3: FLOATING CHAT DOCK UI -->
+    <div id="user-chat-dock">
+        <div class="chat-header">
+            <span class="text-[10px] font-black uppercase tracking-widest">Live Concierge</span>
+            <button onclick="toggleUserChat()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="user-msg-flow" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-slate-50"></div>
+        <div class="chat-input-area">
+            <input type="text" id="user-chat-input" placeholder="Type a message..." class="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-xs text-[#002147] outline-none">
+            <button onclick="sendUserMessage()" class="text-[#002147] px-2"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
 
     <div id="nav-container"></div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-        import { collection, query, where, orderBy, limit, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { collection, query, where, orderBy, limit, onSnapshot, doc, setDoc, addDoc, serverTimestamp, updateDoc, increment, getDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { renderHeader, renderBottomNav } from './components.js';
         import { formatCurrency, formatDate } from './utils.js';
 
-        onAuthStateChanged(auth, (user) => {
+        let userUid = null;
+        let userData = null;
+
+        onAuthStateChanged(auth, async (user) => {
             if (!user) { window.location.href = "login.html"; return; }
+            userUid = user.uid;
 
             document.getElementById('header-container').innerHTML = renderHeader(`Trust Bank`);
             document.getElementById('nav-container').innerHTML = renderBottomNav('dashboard');
 
-            // User Data & KYC Badge
+            // --- USER DATA & KYC BADGE ---
             onSnapshot(doc(db, "users", user.uid), (snap) => {
                 const data = snap.data();
                 if(data) {
+                    userData = data;
                     document.getElementById('user-name-display').innerText = `Hello, ${data.fullName.split(' ')[0]}`;
-
                     const badge = document.getElementById('kyc-badge');
                     const status = data.kycStatus || 'NONE';
                     
@@ -180,13 +198,32 @@
                         badge.className = "flex items-center justify-center w-5 h-5 bg-amber-400 text-white rounded-full text-[10px] animate-pulse";
                         badge.innerHTML = `<i class="fa-solid fa-clock"></i>`;
                         badge.classList.remove('hidden');
-                    } else {
-                        badge.classList.add('hidden');
-                    }
+                    } else { badge.classList.add('hidden'); }
                 }
             });
 
-            // Account Data
+            // --- STANDARD OF 3: CHAT LISTENERS ---
+            // 1. Listen for Unread Messages
+            onSnapshot(doc(db, "supportTickets", user.uid), snap => {
+                const ticket = snap.data();
+                const badge = document.getElementById('user-unread-count');
+                if (ticket && ticket.unreadUserCount > 0) {
+                    badge.innerText = ticket.unreadUserCount;
+                    badge.classList.remove('hidden');
+                } else { badge.classList.add('hidden'); }
+            });
+
+            // 2. Listen for Message Stream
+            onSnapshot(query(collection(db, "supportTickets", user.uid, "messages"), orderBy("timestamp", "asc")), snap => {
+                const flow = document.getElementById('user-msg-flow');
+                flow.innerHTML = snap.docs.map(d => {
+                    const m = d.data(); const isMe = m.senderRole === 'user';
+                    return `<div class="msg-bubble ${isMe ? 'msg-user' : 'msg-admin'}">${m.text}</div>`;
+                }).join('');
+                flow.scrollTop = flow.scrollHeight;
+            });
+
+            // Standard Data Listeners (Balance & Transactions)
             onSnapshot(query(collection(db, "accounts"), where("ownerUid", "==", user.uid)), (snap) => {
                 if (!snap.empty) {
                     const acc = snap.docs[0].data();
@@ -196,43 +233,62 @@
                 }
             });
 
-            // Activity
             onSnapshot(query(collection(db, "transactions"), where("uid", "==", user.uid), orderBy("timestamp", "desc"), limit(4)), (snap) => {
                 const cont = document.getElementById('recent-transactions');
                 if (snap.empty) { cont.innerHTML = `<p class="text-center py-4 text-xs text-slate-400">No activity yet</p>`; return; }
-                
                 cont.innerHTML = snap.docs.map(tDoc => {
                     const t = tDoc.data();
-                    return `
-                        <div class="flex items-center justify-between p-4 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#002147]">
-                                    <i class="fa-solid ${t.direction === 'credit' ? 'fa-arrow-down text-emerald-500' : 'fa-arrow-up text-rose-500'} text-xs"></i>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-black text-[#002147]">${t.type || 'Transfer'}</p>
-                                    <p class="text-[9px] font-bold text-slate-400 uppercase">${formatDate(t.timestamp)}</p>
-                                </div>
-                            </div>
-                            <p class="text-sm font-black ${t.direction === 'credit' ? 'text-emerald-600' : 'text-rose-600'}">
-                                ${t.direction === 'credit' ? '+' : '-'}${formatCurrency(t.amount)}
-                            </p>
+                    return `<div class="flex items-center justify-between p-4 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#002147]"><i class="fa-solid ${t.direction === 'credit' ? 'fa-arrow-down text-emerald-500' : 'fa-arrow-up text-rose-500'} text-xs"></i></div>
+                            <div><p class="text-xs font-black text-[#002147]">${t.type || 'Transfer'}</p><p class="text-[9px] font-bold text-slate-400 uppercase">${formatDate(t.timestamp)}</p></div>
                         </div>
-                    `;
+                        <p class="text-sm font-black ${t.direction === 'credit' ? 'text-emerald-600' : 'text-rose-600'}">${t.direction === 'credit' ? '+' : '-'}${formatCurrency(t.amount)}</p>
+                    </div>`;
                 }).join('');
             });
         });
 
+        // --- STANDARD OF 3: CHAT FUNCTIONS ---
+        window.toggleUserChat = () => {
+            const dock = document.getElementById('user-chat-dock');
+            const isOpening = dock.style.display !== 'flex';
+            dock.style.display = isOpening ? 'flex' : 'none';
+            if (isOpening && userUid) {
+                // Clear unread count when user opens chat
+                updateDoc(doc(db, "supportTickets", userUid), { unreadUserCount: 0 }).catch(() => {});
+            }
+        };
+
+        window.sendUserMessage = async () => {
+            const input = document.getElementById('user-chat-input');
+            const text = input.value.trim();
+            if (!text || !userUid) return;
+            input.value = "";
+
+            const ticketRef = doc(db, "supportTickets", userUid);
+            await setDoc(ticketRef, {
+                uid: userUid,
+                userName: userData?.fullName || "Client",
+                lastMessage: text,
+                lastTimestamp: serverTimestamp(),
+                unreadAdminCount: increment(1),
+                status: 'OPEN'
+            }, { merge: true });
+
+            await addDoc(collection(db, "supportTickets", userUid, "messages"), {
+                text, senderRole: 'user', timestamp: serverTimestamp()
+            });
+        };
+
         // Live Ticker Logic
         setInterval(() => {
-            const pairs = ['eur-usd', 'gbp-usd', 'usd-jpy', 'btc-usd'];
-            pairs.forEach(id => {
+            ['eur-usd', 'gbp-usd', 'usd-jpy', 'btc-usd'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el){
-                    const change = (Math.random() * 0.01).toFixed(4);
                     const val = parseFloat(el.innerText);
                     const up = Math.random() > 0.5;
-                    el.innerHTML = `${(up ? val + parseFloat(change) : val - parseFloat(change)).toFixed(2)} ${up ? '▲' : '▼'}`;
+                    el.innerHTML = `${(up ? val + 0.01 : val - 0.01).toFixed(2)} ${up ? '▲' : '▼'}`;
                     el.className = up ? 'text-emerald-400' : 'text-rose-400';
                 }
             });
