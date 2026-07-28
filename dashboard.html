@@ -11,7 +11,6 @@
         .view-section { display: none; }
         .view-section.active { display: block; }
         
-        /* Market Ticker Animation */
         @keyframes ticker {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
@@ -21,7 +20,6 @@
         .ticker-item { white-space: nowrap; padding: 10px 40px; font-size: 10px; font-weight: 900; color: #f8fafc; text-transform: uppercase; }
         .ticker-item span { color: #D4AF37; margin-left: 8px; }
 
-        /* Stock Chart Simulation */
         .sparkline { stroke: #D4AF37; stroke-width: 2; fill: none; }
     </style>
 </head>
@@ -35,7 +33,6 @@
             <div class="ticker-item">USD/JPY <span id="usd-jpy">151.4 ▲</span></div>
             <div class="ticker-item">BTC/USD <span id="btc-usd">64,231 ▲</span></div>
             <div class="ticker-item">GOLD/OZ <span id="gold-oz">2,320 ▲</span></div>
-            <!-- Duplicate for infinite loop -->
             <div class="ticker-item">EUR/USD <span id="eur-usd2">0.92 ▲</span></div>
             <div class="ticker-item">GBP/USD <span id="gbp-usd2">1.27 ▼</span></div>
         </div>
@@ -45,12 +42,15 @@
 
     <main class="max-w-md mx-auto px-6 pt-4">
         
-        <!-- Tab 1: Home View -->
         <div id="home-view" class="view-section active space-y-6">
             
             <div class="space-y-1">
                 <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Account Overview</p>
-                <h1 id="user-name-display" class="text-2xl font-black text-[#002147]">Loading...</h1>
+                <div class="flex items-center gap-2">
+                    <h1 id="user-name-display" class="text-2xl font-black text-[#002147]">Loading...</h1>
+                    <!-- Real-Time KYC Verification Badge -->
+                    <div id="kyc-badge" class="hidden"></div>
+                </div>
             </div>
 
             <!-- Balance Card -->
@@ -76,7 +76,7 @@
                 </div>
             </div>
 
-            <!-- NEW: Bank Share Stock Card -->
+            <!-- Bank Share Stock Card -->
             <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center gap-3">
@@ -115,7 +115,7 @@
                 </a>
             </div>
 
-            <!-- NEW: Live Exchange Grid -->
+            <!-- Live Exchange Grid -->
             <section>
                 <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[#002147] mb-4">Currency Exchange</h3>
                 <div class="grid grid-cols-2 gap-4">
@@ -163,12 +163,30 @@
             document.getElementById('header-container').innerHTML = renderHeader(`Trust Bank`);
             document.getElementById('nav-container').innerHTML = renderBottomNav('dashboard');
 
-            // Account Data
+            // User Data & KYC Badge
             onSnapshot(doc(db, "users", user.uid), (snap) => {
                 const data = snap.data();
-                if(data) document.getElementById('user-name-display').innerText = `Hello, ${data.fullName.split(' ')[0]}`;
+                if(data) {
+                    document.getElementById('user-name-display').innerText = `Hello, ${data.fullName.split(' ')[0]}`;
+
+                    const badge = document.getElementById('kyc-badge');
+                    const status = data.kycStatus || 'NONE';
+                    
+                    if (status === 'VERIFIED') {
+                        badge.className = "flex items-center justify-center w-5 h-5 bg-emerald-500 text-white rounded-full text-[10px] shadow-lg shadow-emerald-500/20";
+                        badge.innerHTML = `<i class="fa-solid fa-check"></i>`;
+                        badge.classList.remove('hidden');
+                    } else if (status === 'PENDING') {
+                        badge.className = "flex items-center justify-center w-5 h-5 bg-amber-400 text-white rounded-full text-[10px] animate-pulse";
+                        badge.innerHTML = `<i class="fa-solid fa-clock"></i>`;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                }
             });
 
+            // Account Data
             onSnapshot(query(collection(db, "accounts"), where("ownerUid", "==", user.uid)), (snap) => {
                 if (!snap.empty) {
                     const acc = snap.docs[0].data();
@@ -205,7 +223,7 @@
             });
         });
 
-        // Live Ticker Logic (Simulated)
+        // Live Ticker Logic
         setInterval(() => {
             const pairs = ['eur-usd', 'gbp-usd', 'usd-jpy', 'btc-usd'];
             pairs.forEach(id => {
