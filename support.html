@@ -12,7 +12,7 @@
     <div id="header-container"></div>
     
     <main class="max-w-md mx-auto px-6 pt-6">
-        <!-- Dashboard for Support -->
+        <!-- Dashboard for Support (List of existing chats) -->
         <div id="list-view" class="space-y-6">
             <div class="bg-[#002147] p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
                 <div class="relative z-10">
@@ -24,105 +24,175 @@
                 </div>
             </div>
             <h3 class="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-2">Your Conversations</h3>
-            <div id="ticket-list" class="space-y-3"></div>
+            <div id="ticket-list" class="space-y-3">
+                <!-- Chat sessions will load here -->
+            </div>
         </div>
 
-        <!-- Real-Time Chat Window -->
-        <div id="chat-view" class="hidden flex flex-col h-[80vh]">
+        <!-- Real-Time Chat Window (The actual messaging UI) -->
+        <div id="chat-view" class="hidden flex flex-col h-[85vh]">
             <div class="flex items-center gap-4 mb-6">
-                <button id="back-btn" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm"><i class="fa-solid fa-arrow-left"></i></button>
+                <button id="back-btn" class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-400 shadow-sm">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
                 <div>
-                    <h2 id="chat-subject-text" class="font-black text-[#002147] text-sm truncate w-48">Chat</h2>
+                    <h2 id="chat-subject-text" class="font-black text-[#002147] text-sm truncate w-48 uppercase tracking-tight">Chat</h2>
                     <p class="text-[8px] font-bold text-emerald-500 uppercase tracking-tighter">Verified Agent Connected</p>
                 </div>
             </div>
             
-            <div id="messages-container" class="flex-1 overflow-y-auto space-y-4 px-2 py-4 border-t border-slate-100"></div>
+            <div id="messages-container" class="flex-1 overflow-y-auto space-y-4 px-2 py-4 border-t border-slate-100 flex flex-col">
+                <!-- Messages will appear here -->
+            </div>
 
             <div class="mt-4 bg-white p-2 rounded-2xl border border-slate-200 shadow-xl flex gap-2">
                 <input type="text" id="chat-input" placeholder="Write a message..." class="flex-1 bg-transparent border-none focus:ring-0 px-4 text-sm font-bold text-[#002147]">
-                <button id="send-msg-btn" class="w-12 h-12 bg-[#002147] text-[#D4AF37] rounded-xl"><i class="fa-solid fa-paper-plane"></i></button>
+                <button id="send-msg-btn" class="w-12 h-12 bg-[#002147] text-[#D4AF37] rounded-xl active:scale-90 transition-transform">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
             </div>
         </div>
     </main>
 
     <div id="nav-container"></div>
 
-    <!-- Message Modal -->
+    <!-- New Ticket/Chat Modal -->
     <div id="new-ticket-modal" class="hidden fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm">
         <div class="bg-white rounded-[2.5rem] p-10 w-full max-w-sm space-y-6">
             <div class="text-center">
                 <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-[#002147] mx-auto mb-4"><i class="fa-solid fa-pen-nib text-xl"></i></div>
                 <h3 class="font-black text-[#002147] uppercase text-xs tracking-widest">New Inquiry</h3>
             </div>
-            <input type="text" id="subject" placeholder="Topic (e.g. Missing Funds)" class="w-full bg-slate-50 border-none rounded-xl px-4 py-4 text-sm">
-            <textarea id="first-msg" placeholder="Tell us what's happening..." class="w-full h-32 bg-slate-50 border-none rounded-xl p-4 text-sm"></textarea>
+            <input type="text" id="subject" placeholder="Topic (e.g. Card Issue, Transfer)" class="w-full bg-slate-50 border-none rounded-xl px-4 py-4 text-sm font-bold">
+            <textarea id="first-msg" placeholder="Tell us what's happening..." class="w-full h-32 bg-slate-50 border-none rounded-xl p-4 text-sm font-bold"></textarea>
             <div class="flex gap-3">
                 <button id="close-modal" class="flex-1 font-bold text-slate-400 text-xs uppercase">Cancel</button>
-                <button id="submit-ticket" class="flex-1 btn-primary p-4 rounded-xl text-[10px]">Start Chat</button>
+                <button id="submit-ticket" class="flex-1 bg-[#002147] text-white p-4 rounded-xl text-[10px] font-black uppercase tracking-widest">Start Chat</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { auth, db } from './firebase-config.js';
-        import { collection, addDoc, query, where, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+        import { 
+            collection, addDoc, query, where, orderBy, onSnapshot, 
+            serverTimestamp, doc, updateDoc, increment, getDoc 
+        } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
         import { renderHeader, renderBottomNav, renderStatusBadge, renderEmptyState } from './components.js';
 
         document.getElementById('header-container').innerHTML = renderHeader('Support', false);
         document.getElementById('nav-container').innerHTML = renderBottomNav('settings');
 
         let activeTicketId = null;
+        let messageUnsubscribe = null;
 
         auth.onAuthStateChanged(user => {
             if (!user) return;
 
-            onSnapshot(query(collection(db, "supportTickets"), where("uid", "==", user.uid), orderBy("createdAt", "desc")), snap => {
+            // 1. LISTEN FOR CHAT SESSIONS (List View)
+            onSnapshot(query(collection(db, "supportTickets"), where("uid", "==", user.uid), orderBy("lastTimestamp", "desc")), snap => {
                 const listCont = document.getElementById('ticket-list');
-                if (snap.empty) { listCont.innerHTML = renderEmptyState("No recent chats."); return; }
+                if (snap.empty) {
+                    listCont.innerHTML = renderEmptyState("No recent chats started.");
+                    return;
+                }
                 
                 listCont.innerHTML = snap.docs.map(dDoc => {
                     const t = dDoc.data();
+                    const unread = t.unreadUserCount || 0;
                     return `
-                        <div onclick="openTicket('${dDoc.id}', '${t.subject}')" class="bg-white p-5 rounded-2xl border border-slate-100 flex justify-between items-center cursor-pointer shadow-sm active:bg-slate-50">
+                        <div onclick="openTicket('${dDoc.id}', '${t.subject}')" class="bg-white p-5 rounded-2xl border border-slate-100 flex justify-between items-center cursor-pointer shadow-sm active:bg-slate-50 transition-all mb-2">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-[#002147]"><i class="fa-solid fa-comments"></i></div>
-                                <div><p class="font-black text-[#002147] text-sm">${t.subject}</p><p class="text-[8px] font-bold text-slate-400 uppercase">Live Session</p></div>
+                                <div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-[#002147] relative">
+                                    <i class="fa-solid fa-comments"></i>
+                                    ${unread > 0 ? `<span class="absolute -top-1 -right-1 bg-rose-600 text-white text-[8px] px-1.5 py-0.5 rounded-full font-black animate-pulse">${unread}</span>` : ''}
+                                </div>
+                                <div>
+                                    <p class="font-black text-[#002147] text-sm">${t.subject}</p>
+                                    <p class="text-[9px] font-bold text-slate-400 uppercase truncate w-32">${t.lastMessage || 'Click to view'}</p>
+                                </div>
                             </div>
                             ${renderStatusBadge(t.status)}
                         </div>`;
                 }).join('');
-
-                if (activeTicketId) {
-                    const ticket = snap.docs.find(d => d.id === activeTicketId)?.data();
-                    if (ticket) renderMessages(ticket.messages);
-                }
             });
 
+            // 2. CREATE NEW CHAT
             document.getElementById('submit-ticket').onclick = async () => {
-                const subj = document.getElementById('subject').value;
-                const msg = document.getElementById('first-msg').value;
-                if (!subj || !msg) return;
+                const subj = document.getElementById('subject').value.trim();
+                const msg = document.getElementById('first-msg').value.trim();
+                
+                if (!subj || !msg) {
+                    alert("Please fill in both fields.");
+                    return;
+                }
 
-                const docRef = await addDoc(collection(db, "supportTickets"), {
-                    uid: user.uid, subject: subj, status: "OPEN", createdAt: serverTimestamp(),
-                    messages: [{ sender: "user", text: msg, timestamp: new Date().toISOString() }]
-                });
-                document.getElementById('new-ticket-modal').classList.add('hidden');
-                openTicket(docRef.id, subj);
+                const btn = document.getElementById('submit-ticket');
+                btn.disabled = true;
+                btn.innerText = "Connecting...";
+
+                try {
+                    // Create Parent Doc for Admin CRM
+                    const docRef = await addDoc(collection(db, "supportTickets"), {
+                        uid: user.uid,
+                        userName: user.displayName || "Valued Client",
+                        subject: subj,
+                        status: "OPEN",
+                        createdAt: serverTimestamp(),
+                        lastMessage: msg,
+                        lastTimestamp: serverTimestamp(),
+                        unreadAdminCount: 1, // Alert Admin
+                        unreadUserCount: 0
+                    });
+
+                    // Add First Message to Sub-collection
+                    await addDoc(collection(db, "supportTickets", docRef.id, "messages"), {
+                        senderRole: "user",
+                        text: msg,
+                        timestamp: serverTimestamp()
+                    });
+
+                    document.getElementById('new-ticket-modal').classList.add('hidden');
+                    openTicket(docRef.id, subj);
+                } catch (e) {
+                    console.error(e);
+                    alert("System error. Try again.");
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = "Start Chat";
+                }
             };
 
+            // 3. SEND REPLY IN ACTIVE CHAT
             document.getElementById('send-msg-btn').onclick = async () => {
-                const text = document.getElementById('chat-input').value;
+                const input = document.getElementById('chat-input');
+                const text = input.value.trim();
                 if (!text || !activeTicketId) return;
-                await updateDoc(doc(db, "supportTickets", activeTicketId), {
-                    messages: arrayUnion({ sender: "user", text, timestamp: new Date().toISOString() }),
-                    status: "OPEN"
-                });
-                document.getElementById('chat-input').value = "";
+                
+                input.value = "";
+                
+                try {
+                    // Add to sub-collection
+                    await addDoc(collection(db, "supportTickets", activeTicketId, "messages"), {
+                        senderRole: "user",
+                        text: text,
+                        timestamp: serverTimestamp()
+                    });
+
+                    // Update parent for Admin's inbox list
+                    await updateDoc(doc(db, "supportTickets", activeTicketId), {
+                        lastMessage: text,
+                        lastTimestamp: serverTimestamp(),
+                        unreadAdminCount: increment(1),
+                        status: "OPEN"
+                    });
+                } catch (err) {
+                    console.error("Failed to send:", err);
+                }
             };
         });
 
+        // 4. OPEN CHAT AND LOAD MESSAGES
         window.openTicket = (id, subj) => {
             activeTicketId = id;
             document.getElementById('chat-subject-text').innerText = subj;
@@ -130,25 +200,42 @@
             document.getElementById('chat-view').classList.remove('hidden');
             document.getElementById('header-container').classList.add('hidden');
             document.getElementById('nav-container').classList.add('hidden');
+
+            // Reset unread count for user
+            updateDoc(doc(db, "supportTickets", id), { unreadUserCount: 0 });
+
+            // Clear old listener if exists
+            if (messageUnsubscribe) messageUnsubscribe();
+
+            // Real-time message listener
+            messageUnsubscribe = onSnapshot(query(collection(db, "supportTickets", id, "messages"), orderBy("timestamp", "asc")), snap => {
+                const cont = document.getElementById('messages-container');
+                cont.innerHTML = snap.docs.map(mDoc => {
+                    const m = mDoc.data();
+                    const isAdmin = m.senderRole === 'admin';
+                    return `
+                        <div class="flex ${isAdmin ? 'justify-start' : 'justify-end'}">
+                            <div class="max-w-[85%] p-4 rounded-2xl shadow-sm ${isAdmin ? 'bg-white border border-slate-100 text-slate-700 rounded-tl-none' : 'bg-[#002147] text-white rounded-tr-none'}">
+                                <p class="text-xs font-bold leading-relaxed">${m.text}</p>
+                                <div class="flex items-center justify-between mt-2 gap-4">
+                                    <span class="text-[7px] opacity-40 font-black uppercase">${isAdmin ? 'Support Agent' : 'You'}</span>
+                                    <i class="fa-solid fa-check-double text-[8px] ${isAdmin ? 'hidden' : 'text-[#D4AF37]'}"></i>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
+                cont.scrollTop = cont.scrollHeight;
+            });
         };
 
+        // UI NAVIGATION
         document.getElementById('back-btn').onclick = () => {
             activeTicketId = null;
+            if (messageUnsubscribe) messageUnsubscribe();
             document.getElementById('list-view').classList.remove('hidden');
             document.getElementById('chat-view').classList.add('hidden');
             document.getElementById('header-container').classList.remove('hidden');
             document.getElementById('nav-container').classList.remove('hidden');
-        };
-
-        const renderMessages = (messages) => {
-            const cont = document.getElementById('messages-container');
-            cont.innerHTML = messages.map(m => `
-                <div class="flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}">
-                    <div class="max-w-[85%] p-4 rounded-2xl shadow-sm ${m.sender === 'user' ? 'bg-[#002147] text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'}">
-                        <p class="text-xs font-bold leading-relaxed">${m.text}</p>
-                    </div>
-                </div>`).join('');
-            cont.scrollTop = cont.scrollHeight;
         };
 
         document.getElementById('new-ticket-btn').onclick = () => document.getElementById('new-ticket-modal').classList.remove('hidden');
